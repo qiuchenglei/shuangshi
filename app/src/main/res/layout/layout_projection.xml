@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/layout_parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/black_66">
+
+    <TextView
+            android:id="@+id/tv_btn_projection"
+            android:layout_width="@dimen/dp_42"
+            android:layout_height="@dimen/dp_16"
+            android:layout_marginEnd="@dimen/dp_11"
+            android:background="@drawable/tv_bg_setting_apply"
+            android:gravity="center"
+            android:text="@string/projectionView"
+            android:textColor="@color/white"
+            android:textSize="@dimen/dp_7"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/tv_btn_cancel"
+            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+            android:id="@+id/tv_btn_cancel"
+            android:layout_width="@dimen/dp_42"
+            android:layout_height="@dimen/dp_16"
+            android:background="@drawable/tv_bg_setting_cancel"
+            android:gravity="center"
+            android:text="@string/cancel"
+            android:textColor="@color/blue_44A2FC"
+            android:textSize="@dimen/dp_7"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/tv_btn_projection"
+            app:layout_constraintTop_toTopOf="parent" />
+
+</android.support.constraint.ConstraintLayout>

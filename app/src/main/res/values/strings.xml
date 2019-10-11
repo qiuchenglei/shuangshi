@@ -1,0 +1,91 @@
+<resources>
+    <string name="app_name">Shuangshi</string>
+    <string name="join_class_room">加入教室</string>
+    <string name="room_name_hint">请输入教室名称</string>
+    <string name="user_name_hint">请输入您的名字</string>
+    <string name="radio_button_text_teacher">主讲教室</string>
+    <string name="radio_button_text_student">学生教室</string>
+    <string name="No_enough_permissions">没有足够的权限</string>
+    <string name="Class_room_name_can_not_be_empty">教室名不能为空</string>
+    <string name="User_name_can_not_be_empty">用户名不能为空</string>
+    <string name="Setting">Setting</string>
+    <string name="Audio">Audio</string>
+    <string name="Video">Video</string>
+    <string name="Layout">Layout</string>
+    <string name="Cancel">Cancel</string>
+    <string name="Apply">Apply</string>
+    <string name="default_microphone">Default(Built-in Microphone)</string>
+    <string name="default_camera">Default(Built-in Camera index 0)</string>
+    <string name="default_speaker">Default(Built-in Output)</string>
+    <string name="Microphone">Microphone :</string>
+    <string name="Speaker">Speaker :</string>
+    <string name="high_quality_audio">高音质</string>
+    <string name="stereo">双声道</string>
+    <string name="video_input">设备输入: </string>
+    <string name="video_fps">帧率: </string>
+    <string name="video_bitrate">码率: </string>
+    <string name="video_codec">编码: </string>
+    <string name="video_resolution">分辨率: </string>
+
+    <!-- video fps -->
+    <string name="FPS_5">5FPS</string>
+    <string name="FPS_10">10FPS</string>
+    <string name="FPS_15">15FPS</string>
+    <string name="FPS_24">24FPS</string>
+    <string name="FPS_30">30FPS</string>
+    <string-array name="fps">
+        <item>@string/FPS_5</item>
+        <item>@string/FPS_10</item>
+        <item>@string/FPS_15</item>
+        <item>@string/FPS_24</item>
+        <item>@string/FPS_30</item>
+    </string-array>
+
+    <!-- video fps -->
+    <string name="bitrate_standard">Standard Bitrate</string>
+    <string name="bitrate_compatible">Compatible Bitrate</string>
+    <string-array name="bitrate">
+        <item>@string/bitrate_standard</item>
+        <item>@string/bitrate_compatible</item>
+    </string-array>
+
+    <!-- video codec -->
+    <string name="codec_software">Software Codec</string>
+    <string name="codec_hardware">Hardware Codec</string>
+    <string-array name="codec">
+        <item>@string/codec_software</item>
+        <item>@string/codec_hardware</item>
+    </string-array>
+
+    <!-- video fps -->
+    <string name="dimensions_240P">240P</string>
+    <string name="dimensions_360P">360P</string>
+    <string name="dimensions_480P">480P</string>
+    <string name="dimensions_720P">720P</string>
+    <string name="dimensions_1080P">1080P</string>
+    <string-array name="dimensions">
+        <item>@string/dimensions_240P</item>
+        <item>@string/dimensions_360P</item>
+        <item>@string/dimensions_480P</item>
+        <item>@string/dimensions_720P</item>
+        <item>@string/dimensions_1080P</item>
+    </string-array>
+
+    <string name="one_v_N">1 v N</string>
+    <string name="one_v_16">1 v N</string>
+
+    <string name="layout">布局: </string>
+    <string name="layout_PIP">画中画</string>
+
+    <string name="class_timer_pre">已上课 </string>
+    <string name="class_begin">上课</string>
+    <string name="class_finish">下课</string>
+
+    <string name="confirm">确定</string>
+    <string name="cancel">取消</string>
+
+    <string name="Are_you_sure_to_leave_the_classroom">你确认退出教室吗?</string>
+    <string name="teacher_call_notification_text">老师邀请你上线，是否同意？</string>
+
+    <string name="projectionView">投屏</string>
+</resources>

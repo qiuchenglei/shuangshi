@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+    <android.support.constraint.ConstraintLayout
+            android:layout_width="@dimen/dp_120"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_layout_white_radius_3"
+            android:paddingStart="@dimen/dp_11"
+            android:paddingTop="@dimen/dp_16"
+            android:paddingEnd="@dimen/dp_11"
+            android:paddingBottom="@dimen/dp_11"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+                android:id="@+id/tv_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:maxLines="3"
+                android:minLines="1"
+                android:textColor="@color/grey_333333"
+                android:textSize="@dimen/dp_7"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+                android:id="@+id/tv_btn_confirm"
+                android:layout_width="@dimen/dp_42"
+                android:layout_height="@dimen/dp_16"
+                android:layout_marginTop="@dimen/dp_14"
+                android:background="@drawable/tv_bg_setting_apply"
+                android:gravity="center"
+                android:text="@string/confirm"
+                android:textColor="@color/white"
+                android:textSize="@dimen/dp_7"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_content" />
+
+        <TextView
+                android:id="@+id/tv_btn_cancel"
+                android:layout_width="@dimen/dp_42"
+                android:layout_height="@dimen/dp_16"
+                android:background="@drawable/tv_bg_setting_cancel"
+                android:gravity="center"
+                android:text="@string/cancel"
+                android:textColor="@color/blue_44A2FC"
+                android:textSize="@dimen/dp_7"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="@id/tv_btn_confirm" />
+
+    </android.support.constraint.ConstraintLayout>
+</FrameLayout>
