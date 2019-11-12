@@ -258,7 +258,10 @@ class StudentInteractor {
 
         if (rtmChannel != null)
             rtmManager.leaveChannel(rtmChannel)
+
         resetList()
+
+        rtmManager.logout()
     }
 
     fun destroy() {

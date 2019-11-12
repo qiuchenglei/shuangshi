@@ -51,6 +51,7 @@
                 android:layout_width="@dimen/dp_9"
                 android:layout_height="@dimen/dp_9"
                 android:layout_marginEnd="@dimen/dp_5"
+                android:visibility="gone"
                 android:src="@drawable/icon_hidden"
                 app:layout_constraintEnd_toStartOf="@id/iv_icon_close"
                 app:layout_constraintTop_toTopOf="parent" />

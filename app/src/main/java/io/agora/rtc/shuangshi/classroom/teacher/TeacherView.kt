@@ -17,7 +17,7 @@ interface TeacherView {
     fun dismissStudents()
     fun showAllMembers(allMembers: MutableList<Member>)
     fun dismissAllMembers()
-    fun startShare()
+    fun startShare(callback: ShareScreenActivity.StartShareCallback? = null)
     fun stopShare()
     fun finish()
     fun showSettingDialog(settingListener: SettingFragmentDialog.SettingListener? = null)

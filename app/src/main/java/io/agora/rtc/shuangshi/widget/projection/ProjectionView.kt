@@ -41,6 +41,8 @@ class ProjectionView : FrameLayout {
 
         mTvBtnCancel.setOnClickListener {
             projectionListener?.onCancelProjection()
+            mLayoutParent.visibility = View.GONE
+            registerLongClick()
         }
 
         mLayoutParent.visibility = View.GONE

@@ -22,6 +22,11 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+    <io.agora.rtc.shuangshi.widget.projection.ProjectionView
+            android:id="@+id/projection_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
     <FrameLayout
             android:layout_width="match_parent"
             android:padding="@dimen/dp_7"
@@ -79,8 +84,4 @@
         </FrameLayout>
     </FrameLayout>
 
-    <io.agora.rtc.shuangshi.widget.projection.ProjectionView
-            android:id="@+id/projection_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
 </FrameLayout>

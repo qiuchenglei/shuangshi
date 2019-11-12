@@ -107,11 +107,8 @@ public class RtmManager {
             @Override
             public void onFailure(ErrorInfo errorInfo) {
                 changeLoginStatus(LOGIN_STATUS_FAILURE);
-//                logout();
-//                login(uid);
                 String failStr = "login failed, info:" + errorInfo.toString();
                 log.e(failStr);
-                Toast.makeText(AGApplication.the(), failStr, Toast.LENGTH_LONG).show();
             }
         });
     }

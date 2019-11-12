@@ -64,8 +64,7 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
                 }
             })
 
-        mInteractor.setLocalSurfaceView(mView!!.getTeacherViewMax(), false)
-
+        mView?.updateTimer("00:00:00")
         showTeacherMaxUI()
     }
 
@@ -97,7 +96,7 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
         if (!isInClass)
             mTimerCount = 0L
 
-        mView?.updateTimer(stringForTime(mTimerCount, "%d:%02d:%02d"))
+        mView?.updateTimer(stringForTime(mTimerCount, "%02d:%02d:%02d"))
 
         if (isInClass) {
             mTimerCount++
@@ -122,10 +121,11 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
             mTimerCount = 0L
             handler?.post(timerRunnable)
         } else {
-            mView?.updateTimer("")
+            mView?.updateTimer("00:00:00")
         }
 
         if (isInClass) {
+            mInteractor.setLocalSurfaceView(mView!!.getTeacherViewMax(), false)
             mInteractor.joinChannel()
             updateMembersUI()
         } else {
@@ -180,6 +180,13 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
 
     fun onClickTeacherMinOrMax(isMax: Boolean) {
         isShowTeacherMaxByUser = isMax
+        if (isMax) {
+            showTeacherMaxUI()
+            mView?.dismissAllMembers()
+            mView?.dismissStudents()
+        } else {
+            updateMembersUI()
+        }
     }
 
     private var isShowTeacherMaxByUser: Boolean = false

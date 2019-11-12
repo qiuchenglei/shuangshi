@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.shuangshi.R
 import io.agora.rtc.shuangshi.constant.Role
@@ -44,10 +45,32 @@ class MembersAdapter(val mPresenter: TeacherPresenter) :
         }
 
         if (bean.class_role == Role.TEACHER.intValue()) {
-            viewHolder.mIconShare?.isSelected = bean.is_sharing
-            viewHolder.mIconShare?.setOnClickListener {
-                val isSharing = mPresenter.onClickTeacherShare()
-                viewHolder.mIconShare?.isSelected = isSharing
+            if (bean.is_sharing) {
+                viewHolder.mLayoutCloseShare?.visibility = View.VISIBLE
+                viewHolder.mLayoutStartShare?.visibility = View.GONE
+            } else {
+                viewHolder.mLayoutCloseShare?.visibility = View.GONE
+                viewHolder.mLayoutStartShare?.visibility = View.VISIBLE
+            }
+            viewHolder.mLayoutStartShare?.setOnClickListener {
+                viewHolder.mLayoutCloseShare?.visibility = View.VISIBLE
+                viewHolder.mLayoutStartShare?.visibility = View.GONE
+                bean.is_sharing = true
+                mPresenter.onClickTeacherShare(
+                    true,
+                    object : ShareScreenActivity.StartShareCallback {
+                        override fun onSuccess() {}
+
+                        override fun onFailure() {
+                            viewHolder.mLayoutCloseShare?.callOnClick()
+                        }
+                    })
+            }
+            viewHolder.mLayoutCloseShare?.setOnClickListener {
+                viewHolder.mLayoutCloseShare?.visibility = View.GONE
+                viewHolder.mLayoutStartShare?.visibility = View.VISIBLE
+                bean.is_sharing = false
+                mPresenter.onClickTeacherShare(false)
             }
         } else {
             viewHolder.mLayoutChosen?.isSelected = bean.online_state in listOf(1, 2, 5)
@@ -55,21 +78,26 @@ class MembersAdapter(val mPresenter: TeacherPresenter) :
         }
 
         viewHolder.mProjectionView.showIsProjectionUI(bean.is_projection)
-        viewHolder.mProjectionView.projectionListener = object : ProjectionView.OnProjectionListener {
-            override fun onStartProjection() {
-                mPresenter.onStartProjection()
-                if (bean.is_projection) {
-                    viewHolder.mLayoutVideo.visibility = View.GONE
-                    viewHolder.mLayoutVideo.removeAllViews()
-                    viewHolder.mLayoutBg.visibility = View.VISIBLE
+        viewHolder.mProjectionView.projectionListener =
+            object : ProjectionView.OnProjectionListener {
+                override fun onStartProjection() {
+                    mPresenter.onStartProjection()
+                    if (bean.is_projection) {
+                        viewHolder.mLayoutVideo.visibility = View.GONE
+                        viewHolder.mLayoutVideo.removeAllViews()
+                        viewHolder.mLayoutBg.visibility = View.VISIBLE
+                    }
+                }
+
+                override fun onCancelProjection() {
+                    mPresenter.onCancelProjection(bean)
+                    notifyVideoView(
+                        viewHolder,
+                        bean,
+                        RtcEngine.CreateRendererView(viewHolder.itemView.context)
+                    )
                 }
             }
-
-            override fun onCancelProjection() {
-                mPresenter.onCancelProjection(bean)
-                notifyVideoView(viewHolder, bean, RtcEngine.CreateRendererView(viewHolder.itemView.context))
-            }
-        }
     }
 
     val KEY_TAG_UID = 100;
@@ -107,7 +135,8 @@ class MembersAdapter(val mPresenter: TeacherPresenter) :
 
     class MyViewHolder(itemView: View, viewType: Int = 0) : RecyclerView.ViewHolder(itemView) {
         // teacher
-        var mIconShare: ImageView? = null
+        var mLayoutStartShare: FrameLayout? = null
+        var mLayoutCloseShare: LinearLayout? = null
         // student
         var mLayoutChosen: CheckableLinearLayout? = null
         // all
@@ -123,7 +152,8 @@ class MembersAdapter(val mPresenter: TeacherPresenter) :
             mIconCamera = itemView.findViewById(R.id.iv_icon_camera)
             mIconMic = itemView.findViewById(R.id.iv_icon_mic)
             if (viewType == 1) {
-                mIconShare = itemView.findViewById(R.id.ic_share)
+                mLayoutStartShare = itemView.findViewById(R.id.layout_start_share)
+                mLayoutCloseShare = itemView.findViewById(R.id.layout_close_share)
             } else {
                 mLayoutChosen = itemView.findViewById(R.id.checkable_layout_chosen)
             }

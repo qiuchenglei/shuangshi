@@ -7,10 +7,7 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.SurfaceView
 import android.view.View
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.shuangshi.R
 import io.agora.rtc.shuangshi.classroom.Member
@@ -32,8 +29,8 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
         stopShareScreen()
     }
 
-    override fun startShare() {
-        startShareScreen()
+    override fun startShare(callback: StartShareCallback?) {
+        startShareScreen(callback)
     }
 
     override fun showToast(text: String) {
@@ -47,7 +44,7 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
     override fun showTeacherMax(isInClass: Boolean, teacherAttr: Member) {
         mLayoutTeacherMax.visibility = View.VISIBLE
 
-        mTeacherMaxIconShare.isSelected = teacherAttr.is_sharing
+        mTeacherMaxLayoutStartShare.isSelected = teacherAttr.is_sharing
         mTeacherMaxIconMic.isSelected = teacherAttr.mute_local_audio
         mTeacherMaxIconCamera.isSelected = teacherAttr.mute_local_video
         mTeacherMaxTvName.text = teacherAttr.user_name
@@ -108,7 +105,8 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
 
     private lateinit var mLayoutTeacherMax: FrameLayout
     private lateinit var mTeacherMaxLayoutVideo: FrameLayout
-    private lateinit var mTeacherMaxIconShare: ImageView
+    private lateinit var mTeacherMaxLayoutStartShare: FrameLayout
+    private lateinit var mTeacherMaxLayoutCloseShare: LinearLayout
     private lateinit var mTeacherMaxIconMic: ImageView
     private lateinit var mTeacherMaxIconCamera: ImageView
     private lateinit var mTeacherMaxLayoutBg: FrameLayout
@@ -121,7 +119,8 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
         mLayoutTeacherMax = findViewById<FrameLayout>(R.id.layout_teacher_max)
         mTeacherMaxLayoutVideo = mLayoutTeacherMax.findViewById(R.id.layout_video)
         mTeacherMaxLayoutBg = mLayoutTeacherMax.findViewById(R.id.layout_bg)
-        mTeacherMaxIconShare = mLayoutTeacherMax.findViewById(R.id.ic_share)
+        mTeacherMaxLayoutStartShare = mLayoutTeacherMax.findViewById(R.id.layout_start_share)
+        mTeacherMaxLayoutCloseShare = mLayoutTeacherMax.findViewById(R.id.layout_close_share)
         mTeacherMaxIconCamera = mLayoutTeacherMax.findViewById(R.id.iv_icon_camera)
         mTeacherMaxIconMic = mLayoutTeacherMax.findViewById(R.id.iv_icon_mic)
         mTeacherMaxTvName = mLayoutTeacherMax.findViewById(R.id.tv_name)
@@ -148,14 +147,35 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
             }
         mTeacherMaxIconCamera.setOnClickListener {
             mTeacherMaxIconCamera.isSelected = mPresenter.onClickTeacherMaxCamera()
+            if (mTeacherMaxIconCamera.isSelected) {
+                mTeacherMaxLayoutBg.visibility = View.VISIBLE
+                mTeacherMaxLayoutVideo.visibility = View.GONE
+            } else {
+                mTeacherMaxLayoutBg.visibility = View.GONE
+                mTeacherMaxLayoutVideo.visibility = View.VISIBLE
+            }
         }
         mTeacherMaxIconMic.setOnClickListener {
             mTeacherMaxIconMic.isSelected = mPresenter.onClickTeacherMaxMic()
         }
-        mTeacherMaxIconShare.setOnClickListener {
-            mTeacherMaxIconShare.isSelected = mPresenter.onClickTeacherShare()
-        }
+        mTeacherMaxLayoutStartShare.setOnClickListener {
+            mTeacherMaxLayoutCloseShare.visibility = View.VISIBLE
+            mTeacherMaxLayoutStartShare.visibility = View.GONE
+            mPresenter.onClickTeacherShare(
+                true,
+                object : ShareScreenActivity.StartShareCallback {
+                    override fun onSuccess() {}
 
+                    override fun onFailure() {
+                        mTeacherMaxLayoutCloseShare.callOnClick()
+                    }
+                })
+        }
+        mTeacherMaxLayoutCloseShare.setOnClickListener {
+            mTeacherMaxLayoutCloseShare.visibility = View.GONE
+            mTeacherMaxLayoutStartShare.visibility = View.VISIBLE
+            mPresenter.onClickTeacherShare(false)
+        }
         mTeacherMaxSurfaceView = RtcEngine.CreateRendererView(this)
         mTeacherMaxLayoutVideo.addView(mTeacherMaxSurfaceView)
         mTeacherMaxSurfaceView.setZOrderMediaOverlay(false)
@@ -207,6 +227,7 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
         mTvBeginOrFinish.setOnClickListener { mPresenter.onClickBeginClass() }
         mIvIconClose.setOnClickListener { mPresenter.onClickClose() }
         mIvIconSetting.setOnClickListener { mPresenter.onClickSetting() }
+        mIvIconExit.setOnClickListener { mPresenter.onClickClose() }
 
         val gridLayoutManager = GridLayoutManager(this, 2, LinearLayoutManager.HORIZONTAL, false)
         mRcvMembersLess.layoutManager = gridLayoutManager

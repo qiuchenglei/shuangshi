@@ -51,20 +51,18 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
                 }
             })
 
-        mInteractor.setLocalSurfaceView(mView!!.getTeacherViewMax(), false)
-
+        mView?.updateTimer("00:00:00")
         showTeacherMaxUI()
     }
 
-    fun onClickTeacherShare(): Boolean {
-        val isSharing = mInteractor.switchTeacherShare()
+    fun onClickTeacherShare(isSharing: Boolean, callback: ShareScreenActivity.StartShareCallback? = null) {
+        mInteractor.setTeacherShare(isSharing)
         if (isSharing) {
-            mView?.startShare()
+            mView?.startShare(callback)
         } else {
             mView?.stopShare()
             mInteractor.startRtcSDKSource()
         }
-        return isSharing
     }
 
     fun onClickTeacherMaxMic(): Boolean {
@@ -140,7 +138,7 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
             mTimerCount = 0L
             handler?.post(timerRunnable)
         } else {
-            mView?.updateTimer("")
+            mView?.updateTimer("00:00:00")
         }
 
         if (isInClass) {

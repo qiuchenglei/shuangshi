@@ -213,6 +213,8 @@ class TeacherInteractor {
 
         if (rtmChannel != null)
             rtmManager.leaveChannel(rtmChannel)
+
+        rtmManager.logout()
     }
 
     fun destroy() {
@@ -276,11 +278,9 @@ class TeacherInteractor {
         }
     }
 
-    fun switchTeacherShare(): Boolean {
+    fun setTeacherShare(isSharing: Boolean) {
         val member = getTeacherAttr()
-        member.is_sharing = !member.is_sharing
-
-        return member.is_sharing
+        member.is_sharing = isSharing
     }
 
     fun switchTeacherLocalAudio(): Boolean {

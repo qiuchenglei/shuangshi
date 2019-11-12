@@ -38,7 +38,15 @@ abstract class ShareScreenActivity : BaseActivity(), SurfaceReadyListener {
         bindService(intent, connection, BIND_AUTO_CREATE)
     }
 
-    protected fun startShareScreen() {
+    public interface StartShareCallback {
+        fun onSuccess()
+        fun onFailure()
+    }
+
+    private var callback: StartShareCallback? = null
+
+    protected fun startShareScreen(callback: StartShareCallback? = null) {
+        this.callback = callback
         recordService?.isEnableViewRecord = false
         val projectionManager =
             getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
@@ -64,7 +72,11 @@ abstract class ShareScreenActivity : BaseActivity(), SurfaceReadyListener {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopShareScreen()
         unbindService(connection)
+    }
+
+    protected fun onShareScreenFailed() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -75,6 +87,10 @@ abstract class ShareScreenActivity : BaseActivity(), SurfaceReadyListener {
             mediaProjection = projectionManager.getMediaProjection(resultCode, data)
             recordService?.setMediaProject(mediaProjection)
             recordService?.startRecord(rtcWorker().rtcEngine)
+            callback?.onSuccess()
+        } else {
+            onShareScreenFailed()
+            callback?.onFailure()
         }
     }
 

@@ -177,6 +177,7 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
         mTvBeginOrFinish.setOnClickListener { mPresenter.onClickBeginClass() }
         mIvIconClose.setOnClickListener { mPresenter.onClickClose() }
         mIvIconSetting.setOnClickListener {mPresenter.onClickSetting()}
+        mIvIconExit.setOnClickListener { mPresenter.onClickClose() }
 
         initTeacherMax()
     }

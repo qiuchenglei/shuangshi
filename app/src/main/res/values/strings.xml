@@ -88,4 +88,6 @@
     <string name="teacher_call_notification_text">老师邀请你上线，是否同意？</string>
 
     <string name="projectionView">投屏</string>
+
+    <string name="text_close_share">退出共享</string>
 </resources>

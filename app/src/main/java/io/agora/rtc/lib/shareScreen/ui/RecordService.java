@@ -101,6 +101,12 @@ public class RecordService extends Service {
         return true;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        stopRecord();
+    }
+
     public void setSurfaceReadyListener(SurfaceReadyListener listener) {
         this.listener = listener;
     }
