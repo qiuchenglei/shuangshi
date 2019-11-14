@@ -18,4 +18,5 @@ interface StudentView {
     fun dismissAllMembers()
     fun finish()
     fun showSettingDialog(settingListener: SettingFragmentDialog.SettingListener? = null)
+    fun onPartChanged(changeList: MutableList<Member>)
 }

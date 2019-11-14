@@ -1,6 +1,7 @@
 package io.agora.rtc.shuangshi.classroom.student
 
 import android.support.v7.widget.RecyclerView
+import android.view.LayoutInflater
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
@@ -8,6 +9,7 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import io.agora.rtc.RtcEngine
+import io.agora.rtc.lib.util.DensityUtil
 import io.agora.rtc.shuangshi.R
 import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.shuangshi.base.RcvBaseAdapter
@@ -16,109 +18,123 @@ import io.agora.rtc.shuangshi.widget.projection.ProjectionView
 
 class MembersAdapter(private val mPresenter: StudentPresenter, private val myUserId: Int) :
     RcvBaseAdapter<Member, MembersAdapter.MyViewHolder>() {
+    override fun isEqual(old: Member, new: Member): Boolean {
+        return old.uid == new.uid
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
         if (viewType == 1) {
             return MyViewHolder(
-                View.inflate(parent.context, R.layout.layout_teacher_for_student, null), 1
+                LayoutInflater.from(parent.context).inflate(
+                    R.layout.layout_teacher_for_student, parent,
+                    false
+                ),
+                1
             )
         }
-        return MyViewHolder(View.inflate(parent.context, R.layout.layout_student_for_student, null))
+        return MyViewHolder(
+            LayoutInflater.from(parent.context).inflate(
+                R.layout.layout_student_for_student, parent,
+                false
+            )
+        )
     }
 
-    override fun onBindViewHolder(viewHolder: MyViewHolder, position: Int, bean: Member) {
-        val surfaceView = RtcEngine.CreateRendererView(viewHolder.itemView.context)
+    override fun onBindViewHolder(viewHolder: MyViewHolder, position: Int, bean: Member, payloads: MutableList<Any>) {
+        val ctx = viewHolder.itemView.context
+        if (itemCount < 2) {
+            viewHolder.itemView.layoutParams.width = DensityUtil.getScreenWidth(ctx)
+        } else {
+            viewHolder.itemView.layoutParams.width = DensityUtil.getScreenWidth(ctx) / 2
+        }
         if (bean.class_role == Role.TEACHER.intValue()) {
-            viewHolder.mIconSpeaker?.isSelected = bean.mute_remote_audio
-            viewHolder.mIconSpeaker?.setOnClickListener {
-                mPresenter.onClickSpeaker(bean)
-                viewHolder.mIconSpeaker?.isSelected = bean.mute_remote_audio
-            }
             viewHolder.mIconMax?.setOnClickListener {
                 mPresenter.onClickTeacherMinOrMax(true)
             }
         } else {
             if (myUserId == bean.uid) {
-                viewHolder.mIconMic?.visibility = View.VISIBLE
-                viewHolder.mIconSpeaker?.visibility = View.GONE
+                viewHolder.mLayoutMe?.visibility = View.VISIBLE
+                viewHolder.mIconSpeaker.visibility = View.GONE
 
-                viewHolder.mIconMic?.isSelected = bean.mute_local_audio
-                viewHolder.mIconCamera?.isSelected = bean.mute_local_video
-
+                viewHolder.mIconMic?.isSelected = bean.is_mute_audio
+                viewHolder.mIconCamera?.isSelected = bean.is_mute_video
                 viewHolder.mIconMic?.setOnClickListener {
                     mPresenter.onClickMic(bean)
-                    viewHolder.mIconMic?.isSelected = bean.mute_local_audio
+                    viewHolder.mIconMic?.isSelected = bean.is_mute_audio
                 }
                 viewHolder.mIconCamera?.setOnClickListener {
                     mPresenter.onClickCamera(bean)
-                    notifyVideoView(viewHolder, bean, surfaceView)
-                    viewHolder.mIconCamera?.isSelected = bean.mute_local_video
+                    notifyVideoView(
+                        viewHolder, bean,
+                        RtcEngine.CreateRendererView(viewHolder.itemView.context)
+                    )
+                    viewHolder.mIconCamera?.isSelected = bean.is_mute_video
                 }
-                viewHolder.mIconSpeaker?.setOnClickListener(null)
             } else {
-                viewHolder.mIconMic?.visibility = View.GONE
-                viewHolder.mIconSpeaker?.visibility = View.VISIBLE
-
-                viewHolder.mIconSpeaker?.isSelected = bean.mute_remote_audio
-
+                viewHolder.mLayoutMe?.visibility = View.GONE
+                viewHolder.mIconSpeaker.visibility = View.VISIBLE
                 viewHolder.mIconMic?.setOnClickListener(null)
                 viewHolder.mIconCamera?.setOnClickListener(null)
-                viewHolder.mIconSpeaker?.setOnClickListener {
-                    mPresenter.onClickSpeaker(bean)
-                    viewHolder.mIconSpeaker?.isSelected = bean.mute_remote_audio
-                }
             }
         }
 
+        viewHolder.mIconSpeaker.isSelected = bean.is_mute_audio
+//            viewHolder.mIconSpeaker?.setOnClickListener {
+//                mPresenter.onClickSpeaker(bean)
+//                viewHolder.mIconSpeaker?.isSelected = bean.mute_remote_audio
+//            }
         viewHolder.mName.text = bean.user_name
-        notifyVideoView(viewHolder, bean, surfaceView)
-        mPresenter.bindEngineVideo(surfaceView, bean.uid)
+        notifyVideoView(viewHolder, bean, RtcEngine.CreateRendererView(viewHolder.itemView.context))
 
         viewHolder.mProjectionView.showIsProjectionUI(bean.is_projection)
-        viewHolder.mProjectionView.projectionListener = object : ProjectionView.OnProjectionListener {
-            override fun onStartProjection() {
-                mPresenter.onStartProjection()
-                if (bean.is_projection) {
-                    viewHolder.mLayoutVideo.visibility = View.GONE
-                    viewHolder.mLayoutVideo.removeAllViews()
-                    viewHolder.mLayoutBg.visibility = View.VISIBLE
+        viewHolder.mProjectionView.projectionListener =
+            object : ProjectionView.OnProjectionListener {
+                override fun onStartProjection() {
+                    if (mPresenter.onStartProjection()) {
+                        viewHolder.mLayoutVideo.visibility = View.GONE
+                        viewHolder.mLayoutVideo.removeAllViews()
+                        viewHolder.mLayoutBg.visibility = View.VISIBLE
+                    }
+                }
+
+                override fun onCancelProjection() {
+                    mPresenter.onCancelProjection(bean)
+                    notifyVideoView(
+                        viewHolder, bean,
+                        RtcEngine.CreateRendererView(viewHolder.itemView.context)
+                    )
                 }
             }
-
-            override fun onCancelProjection() {
-                mPresenter.onCancelProjection(bean)
-                notifyVideoView(viewHolder, bean, RtcEngine.CreateRendererView(viewHolder.itemView.context))
-            }
-        }
     }
 
-    val KEY_TAG_UID = 100;
-
     private fun notifyVideoView(viewHolder: MyViewHolder, bean: Member, surfaceView: SurfaceView) {
-        surfaceView.setTag(KEY_TAG_UID, bean.uid)
-        if (bean.mute_local_video || bean.is_projection) {
+        surfaceView.tag = bean.uid
+        if (bean.is_mute_video || bean.is_projection) {
             viewHolder.mLayoutVideo.visibility = View.GONE
             viewHolder.mLayoutVideo.removeAllViews()
             viewHolder.mLayoutBg.visibility = View.VISIBLE
         } else {
             if (viewHolder.mLayoutVideo.childCount > 0) {
                 val lasSurfaceView = viewHolder.mLayoutVideo.getChildAt(0)
-                if (lasSurfaceView.getTag(KEY_TAG_UID) as Int != bean.uid) {
+                if (lasSurfaceView.tag != null && lasSurfaceView.tag as Int != bean.uid) {
                     viewHolder.mLayoutVideo.removeAllViews()
+                    surfaceView.setZOrderMediaOverlay(true)
                     viewHolder.mLayoutVideo.addView(surfaceView)
                     mPresenter.bindEngineVideo(surfaceView, bean.uid)
                 }
             } else {
+                surfaceView.setZOrderMediaOverlay(true)
                 viewHolder.mLayoutVideo.addView(surfaceView)
                 mPresenter.bindEngineVideo(surfaceView, bean.uid)
             }
             viewHolder.mLayoutVideo.visibility = View.VISIBLE
             viewHolder.mLayoutBg.visibility = View.GONE
         }
-        viewHolder.mIconCamera?.isSelected = bean.mute_local_video
+        viewHolder.mIconCamera?.isSelected = bean.is_mute_video
     }
 
     override fun getItemViewType(position: Int): Int {
-        return if (list!![position].class_role == Role.TEACHER.intValue()) 1 else 0
+        return if (mList[position].class_role == Role.TEACHER.intValue()) 1 else 0
     }
 
     class MyViewHolder(itemView: View, viewType: Int = 0) : RecyclerView.ViewHolder(itemView) {
@@ -127,8 +143,9 @@ class MembersAdapter(private val mPresenter: StudentPresenter, private val myUse
         // student
         var mIconMic: ImageView? = null
         var mIconCamera: ImageView? = null
-        var mIconSpeaker: ImageView? = null
+        var mLayoutMe: FrameLayout? = null
         // all
+        var mIconSpeaker: ImageView
         var mLayoutBg: FrameLayout
         var mLayoutVideo: FrameLayout
         var mName: TextView
@@ -138,11 +155,13 @@ class MembersAdapter(private val mPresenter: StudentPresenter, private val myUse
             mLayoutVideo = itemView.findViewById(R.id.layout_video)
             mLayoutBg = itemView.findViewById(R.id.layout_bg)
             mName = itemView.findViewById(R.id.tv_name)
+            mIconSpeaker = itemView.findViewById(R.id.iv_icon_speaker)
             if (viewType == 1) {
                 mIconMax = itemView.findViewById(R.id.iv_icon_max)
             } else {
                 mIconCamera = itemView.findViewById(R.id.iv_icon_camera)
                 mIconMic = itemView.findViewById(R.id.iv_icon_mic)
+                mLayoutMe = itemView.findViewById(R.id.fl_me)
             }
             mProjectionView = itemView.findViewById(R.id.projection_view)
         }

@@ -7,29 +7,49 @@ data class Member(
     var user_name: String,
     var class_role: Int = Role.STUDENT.intValue(),
     @Transient var room_name: String = "",
-    var mute_local_audio: Boolean = false,
-    var mute_local_video: Boolean = false,
+    var is_mute_audio: Boolean = false,
+    var is_mute_video: Boolean = false,
     var is_online: Boolean = false,
     @Transient var online_state: Int = 0, // 针对学生的字段： 0:初始状态， 1： 学生举手， 2：老师接受举手， 3：老师拒绝举手， 4：老师点名， 5：学生接受点名 6：学生拒绝点名
     @Transient var is_sharing: Boolean = false, // 针对老师的字段，用于更新是否正在
-    @Transient var mute_remote_audio: Boolean = false, // 关闭其他人的audio
+    @Transient var mute_remote_audio: Boolean = true, // 关闭其他人的audio
     @Transient var is_projection: Boolean = false
 ) {
-    public fun setData(memberFromServer: Member) {
-        this.uid = memberFromServer.uid
-        this.user_name = memberFromServer.user_name
-        this.class_role = memberFromServer.class_role
-        this.mute_local_audio = memberFromServer.mute_local_audio
-        this.mute_local_video = memberFromServer.mute_local_video
-        this.is_online = memberFromServer.is_online
+    fun setData(memberFromServer: Member): Boolean {
+        var isChanged = false
+        if (this.uid != memberFromServer.uid) {
+            this.uid = memberFromServer.uid
+            isChanged = true
+        }
+        if (!this.user_name.equals(memberFromServer.user_name)) {
+            this.user_name = memberFromServer.user_name
+            isChanged = true
+        }
+        if (this.class_role == memberFromServer.class_role) {
+            this.class_role = memberFromServer.class_role
+            isChanged = true
+        }
+        if (this.is_mute_audio == memberFromServer.is_mute_audio) {
+            this.is_mute_audio = memberFromServer.is_mute_audio
+            isChanged = true
+        }
+        if (this.is_mute_video == memberFromServer.is_mute_video) {
+            this.is_mute_video = memberFromServer.is_mute_video
+            isChanged = true
+        }
+        if (this.is_online == memberFromServer.is_online) {
+            this.is_online = memberFromServer.is_online
+            isChanged = true
+        }
+        return isChanged
     }
 }
 
-val KEY_OPERATION_INFO = "user_operation_infos"
+val KEY_OPERATION_INFO = "changed_uid"
 
 data class OperationInfo(
-    val uid: Int,
-    val operation_type: Int = 0 //0: add, 1: update, 2: delete
+    val changed_uid: Int
+//    val operation_type: Int = 0 //0: add, 1: update, 2: delete
 )
 
 data class P2PMessage(val cmd: Int = CMD_TEXT, var text: String = "") {
@@ -46,7 +66,7 @@ data class P2PMessage(val cmd: Int = CMD_TEXT, var text: String = "") {
     }
 }
 
-public fun putMember(
+fun putMember(
     map: MutableMap<Int, Member>,
     list: MutableList<Member>,
     value: Member,

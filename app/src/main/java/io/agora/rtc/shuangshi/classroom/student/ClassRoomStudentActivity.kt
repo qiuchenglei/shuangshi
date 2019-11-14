@@ -11,15 +11,39 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import io.agora.rtc.RtcEngine
+import io.agora.rtc.lib.custom.CustomGridLayoutManager
+import io.agora.rtc.lib.custom.CustomLinearLayoutManager
 import io.agora.rtc.shuangshi.R
 import io.agora.rtc.shuangshi.base.BaseActivity
 import io.agora.rtc.shuangshi.classroom.Member
 import io.agora.rtc.shuangshi.constant.IntentKey
+import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.shuangshi.setting.SettingFragmentDialog
 import io.agora.rtc.shuangshi.widget.dialog.MyDialogFragment
 import io.agora.rtc.shuangshi.widget.projection.ProjectionView
 
 class ClassRoomStudentActivity : BaseActivity(), StudentView {
+    override fun onPartChanged(changeList: MutableList<Member>) {
+        changeList.forEach {
+            if (mRcvMembersLess.visibility == View.VISIBLE) {
+                changeList.forEach { allMembersAdapter.updateItem(it) }
+            }
+            if (it.class_role == Role.TEACHER.intValue() && mLayoutTeacherMax.visibility == View.VISIBLE) {
+                mTeacherMaxTvName.text = it.user_name
+                mTeacherMaxIcSpeaker.isSelected = it.is_mute_audio
+                if (!it.is_mute_video) {
+                    mTeacherMaxLayoutBg.visibility = View.GONE
+                    mTeacherMaxLayoutVideo.visibility = View.VISIBLE
+                } else {
+                    mTeacherMaxLayoutBg.visibility = View.VISIBLE
+                    mTeacherMaxLayoutVideo.visibility = View.GONE
+                }
+            }
+            if (it.class_role == Role.STUDENT.intValue() && mRcvStudentsMore.visibility == View.VISIBLE)
+                studentsAdapter.updateItem(it)
+        }
+    }
+
     override fun showSettingDialog(settingListener: SettingFragmentDialog.SettingListener?) {
         SettingFragmentDialog().show(
             supportFragmentManager,
@@ -33,8 +57,8 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
         mTeacherMaxIcMin.visibility = if (isShowMin) View.VISIBLE else View.GONE
 
         mTeacherMaxTvName.text = teacherAttr.user_name
-        mTeacherMaxIcSpeaker.isSelected = teacherAttr.mute_remote_audio
-        if (isInClass && !teacherAttr.mute_local_video) {
+        mTeacherMaxIcSpeaker.isSelected = teacherAttr.is_mute_audio
+        if (isInClass && !teacherAttr.is_mute_video) {
             mTeacherMaxLayoutBg.visibility = View.GONE
             mTeacherMaxLayoutVideo.visibility = View.VISIBLE
         } else {
@@ -49,7 +73,7 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
 
     override fun showStudents(students: MutableList<Member>) {
         mRcvStudentsMore.visibility = View.VISIBLE
-        studentsAdapter.list = students
+        studentsAdapter.mList = students
         studentsAdapter.notifyDataSetChanged()
     }
 
@@ -59,7 +83,7 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
 
     override fun showAllMembers(allMembers: MutableList<Member>) {
         mRcvMembersLess.visibility = View.VISIBLE
-        allMembersAdapter.list = allMembers
+        allMembersAdapter.mList = allMembers
         allMembersAdapter.notifyDataSetChanged()
     }
 
@@ -107,26 +131,27 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
         mTeacherMaxIcMin.visibility = View.GONE
         mTeacherMaxProjectionView = mLayoutTeacherMax.findViewById(R.id.projection_view)
 
-        mTeacherMaxProjectionView.projectionListener = object : ProjectionView.OnProjectionListener {
-            override fun onStartProjection() {
-                val isProjection = mPresenter.onStartProjection()
-                mTeacherMaxProjectionView.showIsProjectionUI(isProjection)
-                if (isProjection) {
-                    mTeacherMaxLayoutVideo.visibility = View.GONE
-                    mTeacherMaxLayoutBg.visibility = View.VISIBLE
+        mTeacherMaxProjectionView.projectionListener =
+            object : ProjectionView.OnProjectionListener {
+                override fun onStartProjection() {
+                    val isProjection = mPresenter.onStartProjection()
+                    mTeacherMaxProjectionView.showIsProjectionUI(isProjection)
+                    if (isProjection) {
+                        mTeacherMaxLayoutVideo.visibility = View.GONE
+                        mTeacherMaxLayoutBg.visibility = View.VISIBLE
+                    }
+                    mPresenter.bindEngineVideo(mTeacherMaxSurfaceView)
                 }
-                mPresenter.bindEngineVideo(mTeacherMaxSurfaceView)
-            }
 
-            override fun onCancelProjection() {
-                mPresenter.onCancelProjection()
-                mTeacherMaxLayoutVideo.visibility = View.VISIBLE
-                mTeacherMaxLayoutBg.visibility = View.GONE
-                mPresenter.bindEngineVideo(mTeacherMaxSurfaceView)
+                override fun onCancelProjection() {
+                    mPresenter.onCancelProjection()
+                    mTeacherMaxLayoutVideo.visibility = View.VISIBLE
+                    mTeacherMaxLayoutBg.visibility = View.GONE
+                    mPresenter.bindEngineVideo(mTeacherMaxSurfaceView)
+                }
             }
-        }
         mTeacherMaxIcMin.setOnClickListener { mPresenter.onClickTeacherMinOrMax(false) }
-        mTeacherMaxIcSpeaker.setOnClickListener { mPresenter.onClickTeacherSpeaker() }
+//        mTeacherMaxIcSpeaker.setOnClickListener { mPresenter.onClickTeacherSpeaker() }
 
         mTeacherMaxSurfaceView = RtcEngine.CreateRendererView(this)
         mTeacherMaxLayoutVideo.addView(mTeacherMaxSurfaceView)
@@ -176,7 +201,7 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
 
         mTvBeginOrFinish.setOnClickListener { mPresenter.onClickBeginClass() }
         mIvIconClose.setOnClickListener { mPresenter.onClickClose() }
-        mIvIconSetting.setOnClickListener {mPresenter.onClickSetting()}
+        mIvIconSetting.setOnClickListener { mPresenter.onClickSetting() }
         mIvIconExit.setOnClickListener { mPresenter.onClickClose() }
 
         initTeacherMax()
@@ -187,7 +212,9 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
         val userName = intent.getStringExtra(IntentKey.INTENT_KEY_USER_NAME)
         val userId = intent.getIntExtra(IntentKey.INTENT_KEY_USER_ID, 0)
 
-        val gridLayoutManager = GridLayoutManager(this, 2, LinearLayoutManager.HORIZONTAL, false)
+        mTvRoomName.text = roomName
+
+        val gridLayoutManager = CustomGridLayoutManager(this, 2, LinearLayoutManager.HORIZONTAL, false)
         mRcvMembersLess.layoutManager = gridLayoutManager
         gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
             override fun getSpanSize(position: Int): Int {
@@ -200,6 +227,9 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
         allMembersAdapter = MembersAdapter(mPresenter, userId)
         studentsAdapter = MembersAdapter(mPresenter, userId)
         mRcvMembersLess.adapter = allMembersAdapter
+
+        val linearLayoutManager = CustomLinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        mRcvStudentsMore.layoutManager = linearLayoutManager
         mRcvStudentsMore.adapter = studentsAdapter
 
         mPresenter.onInit(roomName, userName, userId)
@@ -210,4 +240,7 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
         mPresenter.onDestroy()
     }
 
+    override fun onBackPressed() {
+        mPresenter.onClickClose()
+    }
 }

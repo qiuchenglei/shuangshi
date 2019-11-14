@@ -21,6 +21,7 @@ import io.agora.rtm.RtmChannelListener;
 import io.agora.rtm.RtmClient;
 import io.agora.rtm.RtmClientListener;
 import io.agora.rtm.RtmMessage;
+import io.agora.rtm.RtmStatusCode;
 
 public class RtmManager {
     private final LogUtil log = new LogUtil("RtmManager");
@@ -92,6 +93,8 @@ public class RtmManager {
         }
     }
 
+    private int retryCount = 0;
+
     /**
      * API CALL: login RTM server
      */
@@ -100,15 +103,23 @@ public class RtmManager {
         mRtmClient.login(null, uid, new ResultCallback<Void>() {
             @Override
             public void onSuccess(Void responseInfo) {
+                retryCount = 0;
                 log.i("login success");
                 changeLoginStatus(LOGIN_STATUS_SUCCESS);
             }
 
             @Override
             public void onFailure(ErrorInfo errorInfo) {
-                changeLoginStatus(LOGIN_STATUS_FAILURE);
-                String failStr = "login failed, info:" + errorInfo.toString();
-                log.e(failStr);
+                // 如果error是rejected，可能已经在房间导致，尝试退出重登
+                if (retryCount > 1 || errorInfo.getErrorCode() != RtmStatusCode.LoginError.LOGIN_ERR_REJECTED) {
+                    changeLoginStatus(LOGIN_STATUS_FAILURE);
+                    String failStr = "login failed, info:" + errorInfo.toString();
+                    log.e(failStr);
+                    retryCount = 0;
+                }
+                retryCount++;
+                logout();
+                login(uid);
             }
         });
     }
@@ -129,22 +140,23 @@ public class RtmManager {
     }
 
 
-    public RtmChannel createAndJoinChannel(String channel, RtmChannelListener rtmChannelListener, ResultCallback<Void> callback) {
+    public RtmChannel createChannel(String channel, RtmChannelListener rtmChannelListener) {
         if (TextUtils.isEmpty(channel))
             return null;
 
-        RtmChannel rtmChannel = null;
         try {
             log.i("create channel." + channel);
-            rtmChannel = mRtmClient.createChannel(channel, rtmChannelListener);
-
-            rtmChannel.join(callback);
+            return mRtmClient.createChannel(channel, rtmChannelListener);
         } catch (RuntimeException e) {
             log.e("Fails to create channel. Maybe the channel ID is invalid," +
                     " or already in use. See the API reference for more information.");
+            return null;
         }
+    }
 
-        return rtmChannel;
+    public void joinChannel(RtmChannel rtmChannel, ResultCallback<Void> callback) {
+        if (rtmChannel != null)
+            rtmChannel.join(callback);
     }
 
     public void leaveChannel(RtmChannel rtmChannel) {
@@ -160,9 +172,12 @@ public class RtmManager {
                     log.d("leave failure, " + errorInfo.toString());
                 }
             });
-            rtmChannel.release();
-            rtmChannel = null;
         }
+    }
+
+    public void releaseChannel(RtmChannel rtmChannel) {
+        if (rtmChannel != null)
+            rtmChannel.release();
     }
 
     public interface LoginStatusListener {

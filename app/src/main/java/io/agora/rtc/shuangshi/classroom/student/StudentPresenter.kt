@@ -26,21 +26,33 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
             userName,
             userId,
             object : StudentInteractor.ClassStatusListener() {
+                override fun onPartChange(changeList: MutableList<Member>) {
+                    handler?.post{
+                        mView?.onPartChanged(changeList)
+                    }
+                }
+
                 override fun onTeacherCall() {
-                    mView?.showDialog(R.string.teacher_call_notification_text,
-                        object : MyDialogFragment.DialogClickListener {
-                            override fun clickYes() {
-                                mInteractor.onLine(true)
-                            }
+                    handler?.post {
+                        mView?.showDialog(
+                            R.string.teacher_call_notification_text,
+                            object : MyDialogFragment.DialogClickListener {
+                                override fun clickYes() {
+                                    mInteractor.onLine(true)
+                                }
 
-                            override fun clickNo() {
-                            }
+                                override fun clickNo() {
+                                }
 
-                        }, "call_notification")
+                            }, "call_notification"
+                        )
+                    }
                 }
 
                 override fun onUpdateMembers() {
-                    updateMembersUI()
+                    handler?.post {
+                        updateMembersUI()
+                    }
                 }
 
                 override fun onErrorInfo(errorLog: String, errorInfo: ErrorInfo?) {
@@ -65,20 +77,21 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
             })
 
         mView?.updateTimer("00:00:00")
-        showTeacherMaxUI()
+        mInteractor.joinChannel()
+        updateMembersUI()
     }
 
     private fun updateMembersUI(
         students: MutableList<Member> = mInteractor.studentList,
         allMembers: MutableList<Member> = mInteractor.allMembers
     ) {
-        if (allMembers.size < 2) {
+        if (mInteractor.getTeacherAttr() != null && students.isEmpty()) {
             showTeacherMaxUI()
             mView?.dismissAllMembers()
             mView?.dismissStudents()
-        } else if (allMembers.size < 5) {
-            mView?.showAllMembers(allMembers)
+        } else if (students.size in 1..3) {
             mView?.dismissTeacherMax()
+            mView?.showAllMembers(allMembers)
             mView?.dismissStudents()
         } else {
             showTeacherMaxUI()
@@ -125,12 +138,11 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
         }
 
         if (isInClass) {
-            mInteractor.setLocalSurfaceView(mView!!.getTeacherViewMax(), false)
-            mInteractor.joinChannel()
             updateMembersUI()
+            mInteractor.updateTimeStamp(System.currentTimeMillis() / 1000)
         } else {
-            mInteractor.leaveChannel()
-            updateMembersUI()
+            showTeacherMaxUI()
+            mInteractor.updateTimeStamp(-1)
         }
     }
 
@@ -191,21 +203,21 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
 
     private var isShowTeacherMaxByUser: Boolean = false
 
-    fun onClickTeacherSpeaker() {
-        mInteractor.changeTeacherSpeaker()
-        showTeacherMaxUI()
-    }
-
-    fun onClickSpeaker(bean: Member) {
-        mInteractor.changeSpeaker(bean)
-    }
+//    fun onClickTeacherSpeaker() {
+//        mInteractor.changeTeacherSpeaker()
+//        showTeacherMaxUI()
+//    }
+//
+//    fun onClickSpeaker(bean: Member) {
+//        mInteractor.changeSpeaker(bean)
+//    }
 
 
     private var projection: Projection = Projection()
 
     fun onStartProjection(
         bean: Member? = mInteractor.getTeacherAttr()
-    ) : Boolean {
+    ): Boolean {
         if (mView == null || bean == null)
             return false
 

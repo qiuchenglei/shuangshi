@@ -26,8 +26,16 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
             userName,
             userId,
             object : TeacherInteractor.ClassStatusListener() {
+                override fun onPartChange(changeList: MutableList<Member>) {
+                    handler?.post{
+                        mView?.onPartChanged(changeList)
+                    }
+                }
+
                 override fun onUpdateMembers() {
-                    updateMembersUI()
+                    handler?.post {
+                        updateMembersUI()
+                    }
                 }
 
                 override fun onErrorInfo(errorLog: String, errorInfo: ErrorInfo?) {
@@ -52,7 +60,10 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
             })
 
         mView?.updateTimer("00:00:00")
-        showTeacherMaxUI()
+
+        bindEngineVideo(mView!!.getTeacherViewMax())
+        mInteractor.joinChannel()
+        updateMembersUI()
     }
 
     fun onClickTeacherShare(isSharing: Boolean, callback: ShareScreenActivity.StartShareCallback? = null) {
@@ -89,10 +100,10 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
         students: MutableList<Member> = mInteractor.studentList,
         allMembers: MutableList<Member> = mInteractor.allMembers
     ) {
-        if (allMembers.size < 2) {
-            showTeacherMaxUI()
+        if (students.isEmpty()) {
             mView?.dismissAllMembers()
             mView?.dismissStudents()
+            showTeacherMaxUI()
         } else if (allMembers.size < 5) {
             mView?.showAllMembers(allMembers)
             mView?.dismissTeacherMax()
@@ -142,12 +153,9 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
         }
 
         if (isInClass) {
-            mInteractor.setLocalSurfaceView(mView!!.getTeacherViewMax(), false)
-            mInteractor.joinChannel()
             updateMembersUI()
         } else {
-            mInteractor.leaveChannel()
-            updateMembersUI()
+            showTeacherMaxUI()
         }
     }
 
@@ -171,6 +179,9 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
     }
 
     fun onCallStudent(bean: Member) {
+//        if (bean.online_state == 5) {
+//            showToast("你让${bean.user_name}下线了")
+//        }
         mInteractor.onCallStudent(bean)
         if (bean.online_state == 4) {
             showToast("你对${bean.user_name}发送了点名邀请")

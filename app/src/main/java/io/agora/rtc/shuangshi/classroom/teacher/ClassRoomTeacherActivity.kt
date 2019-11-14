@@ -9,6 +9,8 @@ import android.view.SurfaceView
 import android.view.View
 import android.widget.*
 import io.agora.rtc.RtcEngine
+import io.agora.rtc.lib.custom.CustomGridLayoutManager
+import io.agora.rtc.lib.custom.CustomLinearLayoutManager
 import io.agora.rtc.shuangshi.R
 import io.agora.rtc.shuangshi.classroom.Member
 import io.agora.rtc.shuangshi.constant.IntentKey
@@ -17,6 +19,16 @@ import io.agora.rtc.shuangshi.widget.dialog.MyDialogFragment
 import io.agora.rtc.shuangshi.widget.projection.ProjectionView
 
 class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
+    override fun onPartChanged(changeList: MutableList<Member>) {
+        if (mRcvMembersLess.visibility == View.VISIBLE) {
+            changeList.forEach { allMembersAdapter.updateItem(it) }
+        }
+
+        if (mRcvStudentsMore.visibility == View.VISIBLE) {
+            changeList.forEach { studentsAdapter.updateItem(it) }
+        }
+    }
+
     override fun showSettingDialog(settingListener: SettingFragmentDialog.SettingListener?) {
         SettingFragmentDialog().show(
             supportFragmentManager,
@@ -45,10 +57,10 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
         mLayoutTeacherMax.visibility = View.VISIBLE
 
         mTeacherMaxLayoutStartShare.isSelected = teacherAttr.is_sharing
-        mTeacherMaxIconMic.isSelected = teacherAttr.mute_local_audio
-        mTeacherMaxIconCamera.isSelected = teacherAttr.mute_local_video
+        mTeacherMaxIconMic.isSelected = teacherAttr.is_mute_audio
+        mTeacherMaxIconCamera.isSelected = teacherAttr.is_mute_video
         mTeacherMaxTvName.text = teacherAttr.user_name
-        if (isInClass && !teacherAttr.mute_local_video && !teacherAttr.is_projection) {
+        if (/*isInClass &&*/ !teacherAttr.is_mute_video && !teacherAttr.is_projection) {
             mTeacherMaxLayoutBg.visibility = View.GONE
             mTeacherMaxLayoutVideo.visibility = View.VISIBLE
         } else {
@@ -64,7 +76,7 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
 
     override fun showStudents(students: MutableList<Member>) {
         mRcvStudentsMore.visibility = View.VISIBLE
-        studentsAdapter.list = students
+        studentsAdapter.mList = students
         studentsAdapter.notifyDataSetChanged()
     }
 
@@ -74,7 +86,7 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
 
     override fun showAllMembers(allMembers: MutableList<Member>) {
         mRcvMembersLess.visibility = View.VISIBLE
-        allMembersAdapter.list = allMembers
+        allMembersAdapter.mList = allMembers
         allMembersAdapter.notifyDataSetChanged()
     }
 
@@ -229,7 +241,7 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
         mIvIconSetting.setOnClickListener { mPresenter.onClickSetting() }
         mIvIconExit.setOnClickListener { mPresenter.onClickClose() }
 
-        val gridLayoutManager = GridLayoutManager(this, 2, LinearLayoutManager.HORIZONTAL, false)
+        val gridLayoutManager = CustomGridLayoutManager(this, 2, LinearLayoutManager.HORIZONTAL, false)
         mRcvMembersLess.layoutManager = gridLayoutManager
         gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
             override fun getSpanSize(position: Int): Int {
@@ -240,6 +252,9 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
             }
         }
         mRcvMembersLess.adapter = allMembersAdapter
+
+        val linearLayoutManager = CustomLinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        mRcvStudentsMore.layoutManager = linearLayoutManager
         mRcvStudentsMore.adapter = studentsAdapter
 
         initTeacherMax()
@@ -250,6 +265,7 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
         val roomName = intent.getStringExtra(IntentKey.INTENT_KEY_ROOM_NAME)
         val userName = intent.getStringExtra(IntentKey.INTENT_KEY_USER_NAME)
         val userId = intent.getIntExtra(IntentKey.INTENT_KEY_USER_ID, 0)
+        mTvRoomName.text = roomName
         mPresenter.onInit(roomName, userName, userId)
     }
 
@@ -258,4 +274,7 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
         mPresenter.onDestroy()
     }
 
+    override fun onBackPressed() {
+        mPresenter.onClickClose()
+    }
 }

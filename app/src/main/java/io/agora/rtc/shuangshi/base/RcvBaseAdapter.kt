@@ -5,35 +5,27 @@ import android.support.v7.widget.RecyclerView
 import java.util.ArrayList
 
 abstract class RcvBaseAdapter<T, VH : RecyclerView.ViewHolder> : RecyclerView.Adapter<VH>() {
-    protected var mList: MutableList<T>? = null
 
-    var list: MutableList<T>?
-        get() = mList
+    var mList: MutableList<T> = mutableListOf()
         set(list) {
-            mList = list
+            field = list
         }
 
     fun addList(list: MutableList<T>) {
-        if (mList == null)
-            mList = list
-        else
-            mList!!.addAll(list)
+        mList.addAll(list)
     }
 
-    fun updateItemById(id: String?, item: T) {
-        if (mList == null || id == null) {
-            return
-        }
-        for (i in mList!!.indices) {
-            if (id == getItemStringId(i)) {
-                mList!![i] = item
-                notifyItemChanged(i)
+    fun updateItem(t: T) {
+        for (i in mList.indices) {
+            if (isEqual(mList[i], t)) {
+                mList[i] = t
+                notifyItemChanged(i, t)
             }
         }
     }
 
-    protected fun getItemStringId(position: Int): String? {
-        return null
+    open fun isEqual(old: T, new: T): Boolean {
+        return false
     }
 
     fun addItem(item: T?) {
@@ -57,9 +49,18 @@ abstract class RcvBaseAdapter<T, VH : RecyclerView.ViewHolder> : RecyclerView.Ad
         return mList!![position]
     }
 
-    override fun onBindViewHolder(p0: VH, p1: Int) {
-        onBindViewHolder(p0, p1, mList!![p1])
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        onBindViewHolder(holder, position, mList!![position], mutableListOf())
     }
 
-    abstract fun onBindViewHolder(viewHolder: VH, position: Int, bean: T)
+    override fun onBindViewHolder(holder: VH, position: Int, payloads: MutableList<Any>) {
+        onBindViewHolder(holder, position, mList!![position], payloads)
+    }
+
+    abstract fun onBindViewHolder(
+        viewHolder: VH,
+        position: Int,
+        bean: T,
+        payloads: MutableList<Any>
+    )
 }

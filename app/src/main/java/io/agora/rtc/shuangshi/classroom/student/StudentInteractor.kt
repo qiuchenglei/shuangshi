@@ -3,17 +3,18 @@ package io.agora.rtc.shuangshi.classroom.student
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
+import android.util.Log
 import android.view.SurfaceView
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import io.agora.rtc.Constants
 import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcEngine
-import io.agora.rtc.shuangshi.AGApplication
-import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.lib.rtc.RtcConfig
 import io.agora.rtc.lib.rtm.RtmManager
+import io.agora.rtc.shuangshi.AGApplication
 import io.agora.rtc.shuangshi.classroom.*
+import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rtm.*
@@ -45,6 +46,8 @@ class StudentInteractor {
         this.statusListener = statusListener
         mHandler = Handler(Looper.getMainLooper())
         myAttr = Member(userId, userName, Role.STUDENT.intValue(), roomName)
+        studentList.add(myAttr)
+        allMembers.add(myAttr)
 
         rtcWorker.setRtcEventHandler(object : IRtcEngineEventHandler() {
             override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
@@ -92,71 +95,17 @@ class StudentInteractor {
                     P2PMessage.CMD_CALL -> {
                         statusListener.onTeacherCall()
                     }
+                    P2PMessage.CMD_OFF_LINE -> {
+                        onLine(false)
+                    }
                 }
             }
         })
 
         rtcConfig(rtcWorker.rtcEngine)
-    }
 
-    private fun addOrUpdateMyAttr() {
-        val rtmChannelAttributeMe = RtmChannelAttribute(
-            myAttr.uid.toString(),
-            myAttr.user_name,
-            myAttr.uid.toString(),
-            System.currentTimeMillis()
-        )
-        val rtmChannelAttributeUpdate = RtmChannelAttribute(
-            KEY_OPERATION_INFO,
-            Gson().toJson(OperationInfo(myAttr.uid)),
-            myAttr.uid.toString(),
-            System.currentTimeMillis()
-        )
-        val options = ChannelAttributeOptions(true)
-        rtmManager.rtmClient.addOrUpdateChannelAttributes(
-            myAttr.uid.toString(),
-            mutableListOf(rtmChannelAttributeMe, rtmChannelAttributeUpdate),
-            options,
-            object : ResultCallback<Void> {
-                override fun onFailure(p0: ErrorInfo?) {
-                    statusListener.onErrorInfo("addOrUpdateChannelAttributes failure.", p0)
-                }
 
-                override fun onSuccess(p0: Void?) {
-                }
-            })
-    }
-
-    val teacherList = mutableListOf<Member>()
-    private var teacherMap = mutableMapOf<Int, Member>()
-    val studentList = mutableListOf<Member>()
-    private var studentMap = mutableMapOf<Int, Member>()
-    val allMembers = mutableListOf<Member>()
-
-    fun joinChannel() {
-        rtcWorker.runTask {
-
-            val rtcEngine = rtcWorker.rtcEngine
-            rtcEngine.setClientRole(Constants.CLIENT_ROLE_BROADCASTER)
-
-            rtcEngine.setVideoEncoderConfiguration(
-                VideoEncoderConfiguration(
-                    VideoEncoderConfiguration.VD_640x480,
-                    VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_15,
-                    VideoEncoderConfiguration.STANDARD_BITRATE,
-                    VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_LANDSCAPE
-                )
-            )
-
-//                mRtcEngine.setParameters("{\"rtc.force_unified_communication_mode\":true}");//uc模式
-
-            rtcEngine.joinChannel(null, myAttr.room_name, "", myAttr.uid)
-            rtcWorker.setmRtcConfig(RtcConfig(myAttr.uid, myAttr.room_name))
-
-            addOrUpdateMyAttr()
-        }
-
-        rtmChannel = rtmManager.createAndJoinChannel(myAttr.room_name, object : RtmChannelListener {
+        rtmChannel = rtmManager.createChannel(myAttr.room_name, object : RtmChannelListener {
             override fun onAttributesUpdated(attributes: MutableList<RtmChannelAttribute>?) {
                 if (attributes == null || attributes.isEmpty()) {
                     resetList()
@@ -191,11 +140,17 @@ class StudentInteractor {
 
                 teacherList.removeAll(removeTeachers)
                 teacherMap = mutableMapOf()
-                teacherList.forEach { teacherMap[it.uid] = it }
+                teacherList.forEach {
+                    teacherMap[it.uid] = it
+                }
 
                 val removeStudents = studentList.filter {
                     mapAttributes[it.uid.toString()] == null
                 }
+
+                val isRemove = removeStudents.isNotEmpty() && removeTeachers.isNotEmpty()
+                var isAdd = false
+                val changeList = mutableListOf<Member>()
 
                 studentList.removeAll(removeStudents)
                 studentMap = mutableMapOf()
@@ -209,15 +164,41 @@ class StudentInteractor {
                         break
                     }
                     if (member.class_role == Role.TEACHER.intValue()) {
-                        putMember(teacherMap, teacherList, member)
+                        val lastValue = studentMap[member.uid]
+                        if (lastValue == null) {
+                            studentList.add(member)
+                            studentMap[member.uid] = member
+                            isAdd = true
+                        } else {
+                            if (lastValue.setData(member)) {
+                                changeList.add(member)
+                            }
+                        }
                     } else {
-                        putMember(studentMap, studentList, member)
+                        if (member.is_online) {
+                            val lastValue = studentMap[member.uid]
+                            if (lastValue == null) {
+                                studentList.add(member)
+                                studentMap[member.uid] = member
+                                isAdd = true
+                            } else {
+                                if (lastValue.setData(member)) {
+                                    changeList.add(member)
+                                }
+                            }
+                        }
                     }
+
                 }
+
                 allMembers.clear()
                 allMembers.addAll(teacherList)
                 allMembers.addAll(studentList)
-                statusListener.onUpdateMembers()
+                if (isRemove || isAdd) {
+                    statusListener.onUpdateMembers()
+                } else if (changeList.isNotEmpty()) {
+                    statusListener.onPartChange(changeList)
+                }
             }
 
             override fun onMemberCountUpdated(p0: Int) {
@@ -230,9 +211,70 @@ class StudentInteractor {
             override fun onMemberJoined(p0: RtmChannelMember?) {}
             override fun onMemberLeft(p0: RtmChannelMember?) {}
 
-        }, object : ResultCallback<Void> {
+        })
+    }
+
+    private fun addOrUpdateMyAttr() {
+        val rtmChannelAttributeMe = RtmChannelAttribute(
+            myAttr.uid.toString(),
+            Gson().toJson(myAttr),
+            myAttr.uid.toString(),
+            System.currentTimeMillis()
+        )
+        val rtmChannelAttributeUpdate = RtmChannelAttribute(
+            KEY_OPERATION_INFO,
+            Gson().toJson(OperationInfo(myAttr.uid)),
+            myAttr.uid.toString(),
+            System.currentTimeMillis()
+        )
+        val options = ChannelAttributeOptions(true)
+        rtmManager.rtmClient.addOrUpdateChannelAttributes(
+            myAttr.room_name,
+            mutableListOf(rtmChannelAttributeMe, rtmChannelAttributeUpdate),
+            options,
+            object : ResultCallback<Void> {
+                override fun onFailure(p0: ErrorInfo?) {
+                    statusListener.onErrorInfo("addOrUpdateChannelAttributes failure.", p0)
+                }
+
+                override fun onSuccess(p0: Void?) {
+                    Log.d("haha", "chenggongle")
+                }
+            })
+    }
+
+    val teacherList = mutableListOf<Member>()
+    private var teacherMap = mutableMapOf<Int, Member>()
+    val studentList = mutableListOf<Member>()
+    private var studentMap = mutableMapOf<Int, Member>()
+    val allMembers = mutableListOf<Member>()
+
+    fun joinChannel() {
+        rtcWorker.runTask {
+
+            val rtcEngine = rtcWorker.rtcEngine
+            rtcEngine.setClientRole(Constants.CLIENT_ROLE_BROADCASTER)
+
+            rtcEngine.setVideoEncoderConfiguration(
+                VideoEncoderConfiguration(
+                    VideoEncoderConfiguration.VD_640x480,
+                    VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_15,
+                    VideoEncoderConfiguration.STANDARD_BITRATE,
+                    VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_LANDSCAPE
+                )
+            )
+
+//                mRtcEngine.setParameters("{\"rtc.force_unified_communication_mode\":true}");//uc模式
+
+            rtcWorker.rtcEngine.muteLocalAudioStream(true)
+            rtcEngine.joinChannel(null, myAttr.room_name, "", myAttr.uid)
+            rtcWorker.setmRtcConfig(RtcConfig(myAttr.uid, myAttr.room_name))
+        }
+
+        myAttr.is_mute_audio = true
+        addOrUpdateMyAttr()
+        rtmManager.joinChannel(rtmChannel, object : ResultCallback<Void> {
             override fun onSuccess(p0: Void?) {
-                addOrUpdateMyAttr()
                 statusListener.onJoinRTMChannelSuccess(p0)
             }
 
@@ -256,16 +298,53 @@ class StudentInteractor {
             rtcWorker.setmRtcConfig(null)
         }
 
+        deleteMyAttr()
         if (rtmChannel != null)
             rtmManager.leaveChannel(rtmChannel)
 
         resetList()
+    }
 
-        rtmManager.logout()
+    private fun deleteMyAttr() {
+        val rtmChannelAttributeUpdate = RtmChannelAttribute(
+            KEY_OPERATION_INFO,
+            Gson().toJson(OperationInfo(myAttr.uid)),
+            myAttr.uid.toString(),
+            System.currentTimeMillis()
+        )
+        val options = ChannelAttributeOptions(true)
+        rtmManager.rtmClient.deleteChannelAttributesByKeys(
+            myAttr.room_name,
+            mutableListOf(myAttr.uid.toString()),
+            options,
+            object : ResultCallback<Void> {
+                override fun onFailure(p0: ErrorInfo?) {
+                    statusListener.onErrorInfo("deleteChannelAttributesByKeys failure.", p0)
+                }
+
+                override fun onSuccess(p0: Void?) {
+                    Log.d("haha", "chenggongle")
+                }
+            })
+        rtmManager.rtmClient.addOrUpdateChannelAttributes(
+            myAttr.room_name,
+            mutableListOf(rtmChannelAttributeUpdate),
+            options,
+            object : ResultCallback<Void> {
+                override fun onFailure(p0: ErrorInfo?) {
+                    statusListener.onErrorInfo("addOrUpdateChannelAttributes failure.", p0)
+                }
+
+                override fun onSuccess(p0: Void?) {
+                    Log.d("haha", "chenggongle")
+                }
+            })
     }
 
     fun destroy() {
         leaveChannel()
+        rtmManager.releaseChannel(rtmChannel)
+        rtmManager.logout()
         mHandler?.removeCallbacksAndMessages(null)
         mHandler = null
     }
@@ -281,38 +360,37 @@ class StudentInteractor {
 
     fun bindEngineVideo(surfaceView: SurfaceView?, userId: Int) {
         if (myAttr.uid == userId) {
-            rtcWorker.runTask { rtcWorker.rtcEngine.setupLocalVideo(VideoCanvas(surfaceView)) }
+            rtcWorker.rtcEngine.setupLocalVideo(VideoCanvas(surfaceView))
+            rtcWorker.rtcEngine.startPreview()
         } else {
-            rtcWorker.runTask {
-                rtcWorker.rtcEngine.setupRemoteVideo(
-                    VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, userId)
-                )
-            }
+            rtcWorker.rtcEngine.setupRemoteVideo(
+                VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, userId)
+            )
         }
     }
 
     private fun muteLocalAudio(isMute: Boolean) {
-        myAttr.mute_local_audio = isMute
+        myAttr.is_mute_audio = isMute
         rtcWorker.rtcEngine.muteLocalAudioStream(isMute)
         addOrUpdateMyAttr()
     }
 
     private fun muteLocalVideo(isMute: Boolean) {
-        myAttr.mute_local_video = isMute
+        myAttr.is_mute_video = isMute
         rtcWorker.rtcEngine.muteLocalVideoStream(isMute)
         addOrUpdateMyAttr()
     }
 
-    fun changeTeacherSpeaker() {
-        val attr = getTeacherAttr()
-        if (attr != null)
-            attr.mute_remote_audio = !attr.mute_remote_audio
-    }
+//    fun changeTeacherSpeaker() {
+//        val attr = getTeacherAttr()
+//        if (attr != null)
+//            attr.is_mute_audio = !attr.is_mute_audio
+//    }
 
-    fun changeSpeaker(bean: Member) {
-        bean.mute_remote_audio = !bean.mute_remote_audio
-        rtcWorker.rtcEngine.muteRemoteAudioStream(bean.uid, bean.mute_remote_audio)
-    }
+//    fun changeSpeaker(bean: Member) {
+//        bean.is_mute_audio = !bean.is_mute_audio
+//        rtcWorker.rtcEngine.muteRemoteAudioStream(bean.uid, bean.is_mute_audio)
+//    }
 
     fun onLine(isOnLine: Boolean) {
         myAttr.is_online = isOnLine
@@ -320,15 +398,15 @@ class StudentInteractor {
     }
 
     fun switchLocalAudio(bean: Member) {
-        bean.mute_local_audio = !bean.mute_local_audio
+        bean.is_mute_audio = !bean.is_mute_audio
         if (bean.uid == myAttr.uid)
-            muteLocalAudio(bean.mute_local_audio)
+            muteLocalAudio(bean.is_mute_audio)
     }
 
     fun switchLocalVideo(bean: Member) {
-        bean.mute_local_video = !bean.mute_local_video
+        bean.is_mute_video = !bean.is_mute_video
         if (bean.uid == myAttr.uid)
-            muteLocalVideo(bean.mute_local_audio)
+            muteLocalVideo(bean.is_mute_video)
     }
 
     fun getRtcEngine(): RtcEngine {
@@ -339,6 +417,30 @@ class StudentInteractor {
         changeConfigInChannel(rtcWorker.rtcEngine)
     }
 
+    fun updateTimeStamp(l: Long) {
+        val key = "timestamp"
+        val rtmChannelAttributeClassStart = RtmChannelAttribute(
+            KEY_OPERATION_INFO,
+            "{$key, $l}",
+            myAttr.uid.toString(),
+            System.currentTimeMillis()
+        )
+        val options = ChannelAttributeOptions(true)
+        rtmManager.rtmClient.addOrUpdateChannelAttributes(
+            myAttr.room_name,
+            mutableListOf(rtmChannelAttributeClassStart),
+            options,
+            object : ResultCallback<Void> {
+                override fun onFailure(p0: ErrorInfo?) {
+                    statusListener.onErrorInfo("updateTimeStamp failure.", p0)
+                }
+
+                override fun onSuccess(p0: Void?) {
+                    Log.d("haha", "chenggongle")
+                }
+            })
+    }
+
     abstract class ClassStatusListener : IRtcEngineEventHandler() {
         abstract fun onUpdateMembers()
         abstract fun onJoinRTMChannelSuccess(p0: Void?)
@@ -346,5 +448,6 @@ class StudentInteractor {
         abstract fun onMessageReceived(rtmManager: RtmMessage?, peerId: String?)
         abstract fun onErrorInfo(errorLog: String, errorInfo: ErrorInfo?)
         abstract fun onTeacherCall()
+        abstract fun onPartChange(changeList: MutableList<Member>)
     }
 }
