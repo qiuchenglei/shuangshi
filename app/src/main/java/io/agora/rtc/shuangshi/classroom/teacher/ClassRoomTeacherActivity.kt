@@ -7,11 +7,14 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.view.SurfaceView
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.lib.custom.CustomGridLayoutManager
 import io.agora.rtc.lib.custom.CustomLinearLayoutManager
 import io.agora.rtc.shuangshi.R
+import io.agora.rtc.shuangshi.classroom.GridItemDecoration
+import io.agora.rtc.shuangshi.classroom.LinearItemDecoration
 import io.agora.rtc.shuangshi.classroom.Member
 import io.agora.rtc.shuangshi.constant.IntentKey
 import io.agora.rtc.shuangshi.setting.SettingFragmentDialog
@@ -20,11 +23,11 @@ import io.agora.rtc.shuangshi.widget.projection.ProjectionView
 
 class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
     override fun onPartChanged(changeList: MutableList<Member>) {
-        if (mRcvMembersLess.visibility == View.VISIBLE) {
+        if (mRcvMembersLess.parent != null) {
             changeList.forEach { allMembersAdapter.updateItem(it) }
         }
 
-        if (mRcvStudentsMore.visibility == View.VISIBLE) {
+        if (mRcvStudentsMore.parent != null) {
             changeList.forEach { studentsAdapter.updateItem(it) }
         }
     }
@@ -54,7 +57,15 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
     }
 
     override fun showTeacherMax(isInClass: Boolean, teacherAttr: Member) {
-        mLayoutTeacherMax.visibility = View.VISIBLE
+        if (mLayoutTeacherMax.parent == null) {
+            mLayoutMax.addView(
+                mLayoutTeacherMax,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            mPresenter.bindEngineVideo(mTeacherMaxSurfaceView)
+        }
+        mLayoutMax.visibility = View.VISIBLE
 
         mTeacherMaxLayoutStartShare.isSelected = teacherAttr.is_sharing
         mTeacherMaxIconMic.isSelected = teacherAttr.is_mute_audio
@@ -71,27 +82,50 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
     }
 
     override fun dismissTeacherMax() {
-        mLayoutTeacherMax.visibility = View.GONE
+        mLayoutMax.removeView(mLayoutTeacherMax)
+        mLayoutMax.visibility = View.GONE
     }
 
     override fun showStudents(students: MutableList<Member>) {
-        mRcvStudentsMore.visibility = View.VISIBLE
+        if (mRcvStudentsMore.parent == null) {
+            mLayoutRcvLinear.addView(
+                mRcvStudentsMore,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+        mLayoutRcvLinear.visibility = View.VISIBLE
+
         studentsAdapter.mList = students
         studentsAdapter.notifyDataSetChanged()
     }
 
     override fun dismissStudents() {
-        mRcvStudentsMore.visibility = View.GONE
+        mLayoutRcvLinear.removeView(mRcvStudentsMore)
+        mLayoutRcvLinear.visibility = View.GONE
+        studentsAdapter.mList = mutableListOf()
+        mRcvStudentsMore.removeAllViews()
     }
 
     override fun showAllMembers(allMembers: MutableList<Member>) {
-        mRcvMembersLess.visibility = View.VISIBLE
+        if (mRcvMembersLess.parent == null) {
+            mLayoutRcvGrid.addView(
+                mRcvMembersLess,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+        mLayoutRcvGrid.visibility = View.VISIBLE
+
         allMembersAdapter.mList = allMembers
         allMembersAdapter.notifyDataSetChanged()
     }
 
     override fun dismissAllMembers() {
-        mRcvMembersLess.visibility = View.GONE
+        mLayoutRcvGrid.removeView(mRcvMembersLess)
+        mLayoutRcvGrid.visibility = View.GONE
+        allMembersAdapter.mList = mutableListOf()
+        mRcvMembersLess.removeAllViews()
     }
 
     companion object {
@@ -100,8 +134,8 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
 
     private val mPresenter: TeacherPresenter = TeacherPresenter(this, TeacherInteractor())
 
-    private val allMembersAdapter: MembersAdapter = MembersAdapter(mPresenter)
-    private val studentsAdapter: MembersAdapter = MembersAdapter(mPresenter)
+    private val allMembersAdapter: MembersAdapter = GridAdapter(mPresenter)
+    private val studentsAdapter: MembersAdapter = LinearAdapter(mPresenter)
 
     private lateinit var mTvRoomName: TextView
     private lateinit var mTvTimer: TextView
@@ -114,6 +148,9 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
     private lateinit var mLayoutTitle: ConstraintLayout
     private lateinit var mRcvMembersLess: RecyclerView
     private lateinit var mRcvStudentsMore: RecyclerView
+    private lateinit var mLayoutRcvLinear: FrameLayout
+    private lateinit var mLayoutMax: FrameLayout
+    private lateinit var mLayoutRcvGrid: FrameLayout
 
     private lateinit var mLayoutTeacherMax: FrameLayout
     private lateinit var mTeacherMaxLayoutVideo: FrameLayout
@@ -189,7 +226,11 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
             mPresenter.onClickTeacherShare(false)
         }
         mTeacherMaxSurfaceView = RtcEngine.CreateRendererView(this)
-        mTeacherMaxLayoutVideo.addView(mTeacherMaxSurfaceView)
+        mTeacherMaxLayoutVideo.addView(
+            mTeacherMaxSurfaceView,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
         mTeacherMaxSurfaceView.setZOrderMediaOverlay(false)
     }
 
@@ -224,6 +265,9 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
     override fun initUI(savedInstanceState: Bundle?) {
         setContentView(R.layout.activity_class_room_teacher)
 
+        mLayoutMax = findViewById(R.id.layout_max)
+        mLayoutRcvGrid = findViewById(R.id.layout_rcv_grid)
+        mLayoutRcvLinear = findViewById(R.id.layout_rcv_linear)
         mTvRoomName = findViewById<TextView>(R.id.tv_room_name)
         mTvTimer = findViewById<TextView>(R.id.tv_timer)
         mTvBeginOrFinish = findViewById<TextView>(R.id.tv_begin_or_finish)
@@ -241,7 +285,8 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
         mIvIconSetting.setOnClickListener { mPresenter.onClickSetting() }
         mIvIconExit.setOnClickListener { mPresenter.onClickClose() }
 
-        val gridLayoutManager = CustomGridLayoutManager(this, 2, LinearLayoutManager.HORIZONTAL, false)
+        val gridLayoutManager =
+            CustomGridLayoutManager(this, 2, LinearLayoutManager.HORIZONTAL, false)
         mRcvMembersLess.layoutManager = gridLayoutManager
         gridLayoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
             override fun getSpanSize(position: Int): Int {
@@ -252,10 +297,13 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
             }
         }
         mRcvMembersLess.adapter = allMembersAdapter
+        mRcvMembersLess.addItemDecoration(GridItemDecoration(1))
 
-        val linearLayoutManager = CustomLinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        val linearLayoutManager =
+            CustomLinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         mRcvStudentsMore.layoutManager = linearLayoutManager
         mRcvStudentsMore.adapter = studentsAdapter
+        mRcvStudentsMore.addItemDecoration(LinearItemDecoration(resources.getDimensionPixelSize(R.dimen.dp_4)))
 
         initTeacherMax()
     }

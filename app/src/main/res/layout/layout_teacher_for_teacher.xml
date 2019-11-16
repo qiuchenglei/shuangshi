@@ -18,13 +18,6 @@
                 android:src="@drawable/pic_teacher" />
     </FrameLayout>
 
-    <!--    <android.support.v7.widget.CardView-->
-    <!--            android:id="@+id/layout_video"-->
-    <!--            android:visibility="gone"-->
-    <!--            android:layout_width="wrap_content"-->
-    <!--            app:cardCornerRadius="@dimen/dp_80"-->
-    <!--            android:layout_height="wrap_content" />-->
-
     <FrameLayout
             android:id="@+id/layout_video"
             android:layout_width="match_parent"
@@ -47,7 +40,7 @@
                 android:id="@+id/tv_name"
                 android:layout_width="wrap_content"
                 android:layout_height="@dimen/dp_15"
-                android:background="@drawable/tv_bg_btn_radius_circle_black66"
+                android:background="@drawable/btn_circle_black66"
                 android:gravity="center"
                 android:paddingStart="@dimen/dp_7"
                 android:paddingEnd="@dimen/dp_7"
@@ -60,7 +53,7 @@
                 android:id="@+id/layout_mic_camera"
                 android:layout_width="@dimen/dp_35"
                 android:layout_height="@dimen/dp_15"
-                android:background="@drawable/tv_bg_btn_radius_circle_black66"
+                android:background="@drawable/btn_circle_black66"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
 
@@ -69,14 +62,14 @@
                     android:layout_width="@dimen/dp_15"
                     android:layout_height="@dimen/dp_15"
                     android:layout_gravity="start|center_vertical"
-                    android:src="@drawable/bg_ic_camera" />
+                    android:src="@drawable/ic_camera" />
 
             <ImageView
                     android:id="@+id/iv_icon_mic"
                     android:layout_width="@dimen/dp_15"
                     android:layout_height="@dimen/dp_15"
                     android:layout_gravity="end|center_vertical"
-                    android:src="@drawable/bg_ic_mic" />
+                    android:src="@drawable/ic_mic" />
 
             <View
                     android:layout_width="@dimen/dp_0_5"
@@ -91,7 +84,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/dp_5"
-                android:background="@drawable/tv_bg_btn_circle_white"
+                android:background="@drawable/btn_circle_white"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/layout_mic_camera">
 
@@ -106,7 +99,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="@dimen/dp_15"
                 android:layout_marginEnd="@dimen/dp_5"
-                android:background="@drawable/tv_bg_btn_circle_blue_44a2fc"
+                android:background="@drawable/btn_circle_44a2fc"
                 android:orientation="horizontal"
                 android:paddingStart="@dimen/dp_5"
                 android:paddingEnd="@dimen/dp_8"

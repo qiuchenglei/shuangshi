@@ -21,7 +21,6 @@ public class AGApplication extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
-
     }
 
     public void initRtmManager() {

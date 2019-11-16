@@ -25,19 +25,19 @@ data class Member(
             this.user_name = memberFromServer.user_name
             isChanged = true
         }
-        if (this.class_role == memberFromServer.class_role) {
+        if (this.class_role != memberFromServer.class_role) {
             this.class_role = memberFromServer.class_role
             isChanged = true
         }
-        if (this.is_mute_audio == memberFromServer.is_mute_audio) {
+        if (this.is_mute_audio != memberFromServer.is_mute_audio) {
             this.is_mute_audio = memberFromServer.is_mute_audio
             isChanged = true
         }
-        if (this.is_mute_video == memberFromServer.is_mute_video) {
+        if (this.is_mute_video != memberFromServer.is_mute_video) {
             this.is_mute_video = memberFromServer.is_mute_video
             isChanged = true
         }
-        if (this.is_online == memberFromServer.is_online) {
+        if (this.is_online != memberFromServer.is_online) {
             this.is_online = memberFromServer.is_online
             isChanged = true
         }
@@ -46,11 +46,10 @@ data class Member(
 }
 
 val KEY_OPERATION_INFO = "changed_uid"
+data class OperationInfo(val changed_uid: Int)
 
-data class OperationInfo(
-    val changed_uid: Int
-//    val operation_type: Int = 0 //0: add, 1: update, 2: delete
-)
+val KEY_TIME_STAMP_S = "timestamp"
+data class TimeStampS(val timeStampS: Long)
 
 data class P2PMessage(val cmd: Int = CMD_TEXT, var text: String = "") {
     companion object {

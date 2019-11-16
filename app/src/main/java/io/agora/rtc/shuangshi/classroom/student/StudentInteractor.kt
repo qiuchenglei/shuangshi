@@ -18,6 +18,7 @@ import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rtm.*
+import java.sql.Timestamp
 
 class StudentInteractor {
     private lateinit var statusListener: ClassStatusListener
@@ -29,12 +30,131 @@ class StudentInteractor {
 
     lateinit var myAttr: Member
 
-    public fun getTeacherAttr(): Member? {
+    fun getTeacherAttr(): Member? {
         return if (teacherList.isEmpty()) {
             null
         } else {
             teacherList[0]
         }
+    }
+
+    val rtmChannelListener = object : RtmChannelListener {
+        override fun onAttributesUpdated(attributes: MutableList<RtmChannelAttribute>?) {
+            if (attributes == null || attributes.isEmpty()) {
+                resetList()
+                return
+            }
+
+            val mapAttributes = mutableMapOf<String, String>()
+            for (attribute in attributes) {
+                if (!TextUtils.isEmpty(attribute.key) && !TextUtils.isEmpty(attribute.value))
+                    mapAttributes[attribute.key] = attribute.value
+            }
+
+            val gson = Gson()
+            val operationInfoJson = mapAttributes.remove(KEY_OPERATION_INFO)
+            //上次修改频道属性的uid，暂时无用
+//                if (!TextUtils.isEmpty(operationInfoJson)) {
+//                    try {
+//                        val operationInfo: OperationInfo =
+//                            gson.fromJson(operationInfoJson, OperationInfo::class.java)
+//                    } catch (e: JsonSyntaxException) {
+//                    }
+//                }
+
+            val timestampJson = mapAttributes.remove(KEY_TIME_STAMP_S)
+            if (!TextUtils.isEmpty(timestampJson)) {
+                try {
+                    val timeStampS = gson.fromJson(timestampJson, TimeStampS::class.java)
+                    statusListener.onUpdateTimeStamp(timeStampS.timeStampS)
+                } catch (e: JsonSyntaxException) {
+
+                }
+            }
+
+            if (mapAttributes.isEmpty() || TextUtils.isEmpty(mapAttributes[myAttr.uid.toString()])) {
+                resetList()
+                return
+            }
+
+            //移除已经离开而被删除的老师或学生
+            val removeTeachers = teacherList.filter {
+                mapAttributes[it.uid.toString()] == null
+            }
+
+            teacherList.removeAll(removeTeachers)
+            teacherMap = mutableMapOf()
+            teacherList.forEach {
+                teacherMap[it.uid] = it
+            }
+
+            val removeStudents = studentList.filter {
+                mapAttributes[it.uid.toString()] == null
+            }
+
+            val isRemove = removeStudents.isNotEmpty() && removeTeachers.isNotEmpty()
+            var isAdd = false
+            val changeList = mutableListOf<Member>()
+
+            studentList.removeAll(removeStudents)
+            studentMap = mutableMapOf()
+            studentList.forEach { studentMap[it.uid] = it }
+
+            for (strJson in mapAttributes.values) {
+                val member: Member
+                try {
+                    member = gson.fromJson(strJson, Member::class.java)
+                } catch (e: JsonSyntaxException) {
+                    break
+                }
+                if (member.class_role == Role.TEACHER.intValue()) {
+                    val lastValue = teacherMap[member.uid]
+                    if (lastValue == null) {
+                        teacherList.add(member)
+                        teacherMap[member.uid] = member
+                        isAdd = true
+                    } else {
+                        if (lastValue.setData(member)) {
+                            changeList.add(member)
+                        }
+                    }
+                } else {
+                    if (member.is_online && member.uid != myAttr.uid) {
+                        val lastValue = studentMap[member.uid]
+                        if (lastValue == null) {
+                            studentList.add(member)
+                            studentMap[member.uid] = member
+                            isAdd = true
+                        } else {
+                            if (lastValue.setData(member)) {
+                                changeList.add(member)
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            allMembers.clear()
+            allMembers.addAll(teacherList)
+            allMembers.addAll(studentList)
+            if (isRemove || isAdd) {
+                statusListener.onUpdateMembers()
+            } else if (changeList.isNotEmpty()) {
+                statusListener.onPartChange(changeList)
+            }
+        }
+
+        override fun onMemberCountUpdated(p0: Int) {
+        }
+
+        override fun onMessageReceived(p0: RtmMessage?, p1: RtmChannelMember?) {
+            statusListener.onMessageReceived(p0, p1)
+        }
+
+        override fun onMemberJoined(p0: RtmChannelMember?) {}
+        override fun onMemberLeft(p0: RtmChannelMember?) {}
+
     }
 
     fun init(
@@ -59,16 +179,7 @@ class StudentInteractor {
             }
         })
 
-        rtmManager.registerListener(object : RtmManager.MyRtmClientListener {
-            override fun onLoginStatusChanged(loginStatus: Int) {
-            }
-
-            override fun onTokenExpired() {
-            }
-
-            override fun onConnectionStateChanged(p0: Int, p1: Int) {
-            }
-
+        rtmManager.registerListener(object : RtmManager.MyRtmClientListener() {
             override fun onMessageReceived(rtmMessage: RtmMessage?, peerId: String?) {
                 if (rtmMessage == null)
                     return
@@ -78,19 +189,19 @@ class StudentInteractor {
                     P2PMessage.CMD_TEXT -> statusListener.onMessageReceived(rtmMessage, peerId)
                     P2PMessage.CMD_MUTE_AUDIO -> {
                         muteLocalAudio(true)
-                        statusListener.onUpdateMembers()
+                        statusListener.onPartChange(mutableListOf(myAttr))
                     }
                     P2PMessage.CMD_MUTE_VIDEO -> {
                         muteLocalVideo(true)
-                        statusListener.onUpdateMembers()
+                        statusListener.onPartChange(mutableListOf(myAttr))
                     }
                     P2PMessage.CMD_UN_MUTE_AUDIO -> {
                         muteLocalAudio(false)
-                        statusListener.onUpdateMembers()
+                        statusListener.onPartChange(mutableListOf(myAttr))
                     }
                     P2PMessage.CMD_UN_MUTE_VIDEO -> {
                         muteLocalVideo(false)
-                        statusListener.onUpdateMembers()
+                        statusListener.onPartChange(mutableListOf(myAttr))
                     }
                     P2PMessage.CMD_CALL -> {
                         statusListener.onTeacherCall()
@@ -105,113 +216,7 @@ class StudentInteractor {
         rtcConfig(rtcWorker.rtcEngine)
 
 
-        rtmChannel = rtmManager.createChannel(myAttr.room_name, object : RtmChannelListener {
-            override fun onAttributesUpdated(attributes: MutableList<RtmChannelAttribute>?) {
-                if (attributes == null || attributes.isEmpty()) {
-                    resetList()
-                    return
-                }
-
-                val mapAttributes = mutableMapOf<String, String>()
-                for (attribute in attributes) {
-                    if (!TextUtils.isEmpty(attribute.key) && !TextUtils.isEmpty(attribute.value))
-                        mapAttributes[attribute.key] = attribute.value
-                }
-
-                val gson = Gson()
-                val operationInfoJson = mapAttributes.remove(KEY_OPERATION_INFO)
-                if (!TextUtils.isEmpty(operationInfoJson)) {
-                    try {
-                        val operationInfo: OperationInfo =
-                            gson.fromJson(operationInfoJson, OperationInfo::class.java)
-                    } catch (e: JsonSyntaxException) {
-                    }
-                }
-
-                if (mapAttributes.isEmpty() || TextUtils.isEmpty(mapAttributes[myAttr.uid.toString()])) {
-                    resetList()
-                    return
-                }
-
-                //移除已经离开而被删除的老师或学生
-                val removeTeachers = teacherList.filter {
-                    mapAttributes[it.uid.toString()] == null
-                }
-
-                teacherList.removeAll(removeTeachers)
-                teacherMap = mutableMapOf()
-                teacherList.forEach {
-                    teacherMap[it.uid] = it
-                }
-
-                val removeStudents = studentList.filter {
-                    mapAttributes[it.uid.toString()] == null
-                }
-
-                val isRemove = removeStudents.isNotEmpty() && removeTeachers.isNotEmpty()
-                var isAdd = false
-                val changeList = mutableListOf<Member>()
-
-                studentList.removeAll(removeStudents)
-                studentMap = mutableMapOf()
-                studentList.forEach { studentMap[it.uid] = it }
-
-                for (strJson in mapAttributes.values) {
-                    val member: Member
-                    try {
-                        member = gson.fromJson(strJson, Member::class.java)
-                    } catch (e: JsonSyntaxException) {
-                        break
-                    }
-                    if (member.class_role == Role.TEACHER.intValue()) {
-                        val lastValue = studentMap[member.uid]
-                        if (lastValue == null) {
-                            studentList.add(member)
-                            studentMap[member.uid] = member
-                            isAdd = true
-                        } else {
-                            if (lastValue.setData(member)) {
-                                changeList.add(member)
-                            }
-                        }
-                    } else {
-                        if (member.is_online) {
-                            val lastValue = studentMap[member.uid]
-                            if (lastValue == null) {
-                                studentList.add(member)
-                                studentMap[member.uid] = member
-                                isAdd = true
-                            } else {
-                                if (lastValue.setData(member)) {
-                                    changeList.add(member)
-                                }
-                            }
-                        }
-                    }
-
-                }
-
-                allMembers.clear()
-                allMembers.addAll(teacherList)
-                allMembers.addAll(studentList)
-                if (isRemove || isAdd) {
-                    statusListener.onUpdateMembers()
-                } else if (changeList.isNotEmpty()) {
-                    statusListener.onPartChange(changeList)
-                }
-            }
-
-            override fun onMemberCountUpdated(p0: Int) {
-            }
-
-            override fun onMessageReceived(p0: RtmMessage?, p1: RtmChannelMember?) {
-                statusListener.onMessageReceived(p0, p1)
-            }
-
-            override fun onMemberJoined(p0: RtmChannelMember?) {}
-            override fun onMemberLeft(p0: RtmChannelMember?) {}
-
-        })
+        rtmChannel = rtmManager.createChannel(myAttr.room_name, rtmChannelListener)
     }
 
     private fun addOrUpdateMyAttr() {
@@ -251,22 +256,7 @@ class StudentInteractor {
 
     fun joinChannel() {
         rtcWorker.runTask {
-
             val rtcEngine = rtcWorker.rtcEngine
-            rtcEngine.setClientRole(Constants.CLIENT_ROLE_BROADCASTER)
-
-            rtcEngine.setVideoEncoderConfiguration(
-                VideoEncoderConfiguration(
-                    VideoEncoderConfiguration.VD_640x480,
-                    VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_15,
-                    VideoEncoderConfiguration.STANDARD_BITRATE,
-                    VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_LANDSCAPE
-                )
-            )
-
-//                mRtcEngine.setParameters("{\"rtc.force_unified_communication_mode\":true}");//uc模式
-
-            rtcWorker.rtcEngine.muteLocalAudioStream(true)
             rtcEngine.joinChannel(null, myAttr.room_name, "", myAttr.uid)
             rtcWorker.setmRtcConfig(RtcConfig(myAttr.uid, myAttr.room_name))
         }
@@ -349,15 +339,6 @@ class StudentInteractor {
         mHandler = null
     }
 
-    fun setLocalSurfaceView(teacherViewMax: SurfaceView, isPreview: Boolean) {
-        rtcWorker.runTask {
-            rtcWorker.rtcEngine.setupLocalVideo(VideoCanvas(teacherViewMax))
-            if (isPreview) {
-                rtcWorker.rtcEngine.startPreview()
-            }
-        }
-    }
-
     fun bindEngineVideo(surfaceView: SurfaceView?, userId: Int) {
         if (myAttr.uid == userId) {
             rtcWorker.rtcEngine.setupLocalVideo(VideoCanvas(surfaceView))
@@ -393,8 +374,11 @@ class StudentInteractor {
 //    }
 
     fun onLine(isOnLine: Boolean) {
-        myAttr.is_online = isOnLine
-        addOrUpdateMyAttr()
+        if (myAttr.is_online != isOnLine) {
+            myAttr.is_online = isOnLine
+            addOrUpdateMyAttr()
+            statusListener.onPartChange(mutableListOf(myAttr))
+        }
     }
 
     fun switchLocalAudio(bean: Member) {
@@ -417,28 +401,27 @@ class StudentInteractor {
         changeConfigInChannel(rtcWorker.rtcEngine)
     }
 
-    fun updateTimeStamp(l: Long) {
-        val key = "timestamp"
-        val rtmChannelAttributeClassStart = RtmChannelAttribute(
-            KEY_OPERATION_INFO,
-            "{$key, $l}",
-            myAttr.uid.toString(),
-            System.currentTimeMillis()
-        )
-        val options = ChannelAttributeOptions(true)
-        rtmManager.rtmClient.addOrUpdateChannelAttributes(
-            myAttr.room_name,
-            mutableListOf(rtmChannelAttributeClassStart),
-            options,
-            object : ResultCallback<Void> {
-                override fun onFailure(p0: ErrorInfo?) {
-                    statusListener.onErrorInfo("updateTimeStamp failure.", p0)
-                }
+    fun acceptCall(isAccept: Boolean) {
+        val teacherAttr = getTeacherAttr()
+        if (teacherAttr == null)
+            return
+        onLine(isAccept)
+        if (isAccept) {
+            sendP2PMsg(teacherAttr.uid, Gson().toJson(P2PMessage.CMD_ACCEPT_CALL))
+        } else {
+            sendP2PMsg(teacherAttr.uid, Gson().toJson(P2PMessage.CMD_REFUSE_CALL))
+        }
+    }
 
-                override fun onSuccess(p0: Void?) {
-                    Log.d("haha", "chenggongle")
-                }
-            })
+    fun sendP2PMsg(uid: Int, text: String) {
+        rtmManager.sendP2PMsg(uid.toString(), text, object : ResultCallback<Void> {
+            override fun onSuccess(p0: Void?) {
+            }
+
+            override fun onFailure(p0: ErrorInfo?) {
+                statusListener.onErrorInfo("send p2p message failed.", p0)
+            }
+        })
     }
 
     abstract class ClassStatusListener : IRtcEngineEventHandler() {
@@ -449,5 +432,6 @@ class StudentInteractor {
         abstract fun onErrorInfo(errorLog: String, errorInfo: ErrorInfo?)
         abstract fun onTeacherCall()
         abstract fun onPartChange(changeList: MutableList<Member>)
+        abstract fun onUpdateTimeStamp(timestampS: Long)
     }
 }

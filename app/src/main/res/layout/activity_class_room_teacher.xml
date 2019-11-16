@@ -10,9 +10,9 @@
             android:id="@+id/layout_title"
             android:layout_width="match_parent"
             android:layout_height="@dimen/dp_19"
+            android:background="@color/white"
             android:paddingStart="@dimen/dp_12"
             android:paddingEnd="@dimen/dp_12"
-            android:background="@color/white"
             app:layout_constraintTop_toTopOf="parent">
 
         <TextView
@@ -42,10 +42,10 @@
                 android:layout_width="@dimen/dp_31"
                 android:layout_height="@dimen/dp_13"
                 android:layout_marginStart="@dimen/dp_4"
-                android:background="@drawable/tv_bg_class_begin_or_finish"
+                android:background="@drawable/btn_circle_44a2fc_to_stroke_1_ff2d55"
                 android:gravity="center"
                 android:text="@string/class_begin"
-                android:textColor="@drawable/tv_color_class_begin_or_finish"
+                android:textColor="@drawable/color_white_ff2d55"
                 android:textSize="@dimen/dp_7"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -67,8 +67,8 @@
                 android:layout_width="@dimen/dp_9"
                 android:layout_height="@dimen/dp_9"
                 android:layout_marginEnd="@dimen/dp_5"
-                android:visibility="gone"
                 android:src="@drawable/icon_max"
+                android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/iv_icon_close"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -78,8 +78,8 @@
                 android:layout_width="@dimen/dp_9"
                 android:layout_height="@dimen/dp_9"
                 android:layout_marginEnd="@dimen/dp_5"
-                android:visibility="gone"
                 android:src="@drawable/icon_hidden"
+                android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/iv_icon_maximize"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -106,27 +106,52 @@
 
     </android.support.constraint.ConstraintLayout>
 
-    <include
-            android:id="@+id/layout_teacher_max"
-            layout="@layout/layout_teacher_for_teacher"
-            android:layout_width="match_parent"
+    <FrameLayout
+            android:id="@+id/layout_rcv_linear"
+            android:layout_width="@dimen/dp_135"
             android:layout_height="0dp"
-            android:visibility="visible"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_title" />
-
-    <android.support.v7.widget.RecyclerView
-            android:id="@+id/rcv_members_less"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_title" />
-
-    <android.support.v7.widget.RecyclerView
-            android:id="@+id/rcv_students_more"
-            android:layout_width="@dimen/dp_129"
-            android:layout_height="0dp"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layout_title" />
+            app:layout_constraintTop_toBottomOf="@id/layout_title">
+
+        <android.support.v7.widget.RecyclerView
+                android:id="@+id/rcv_students_more"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/black_66"
+                android:paddingStart="@dimen/dp_4"
+                android:paddingTop="@dimen/dp_4"
+                android:paddingEnd="@dimen/dp_4" />
+
+    </FrameLayout>
+
+    <FrameLayout
+            android:id="@+id/layout_max"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/layout_rcv_linear"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_title">
+
+        <include
+                android:id="@+id/layout_teacher_max"
+                layout="@layout/layout_teacher_for_teacher" />
+
+    </FrameLayout>
+
+    <FrameLayout
+            android:id="@+id/layout_rcv_grid"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layout_title">
+
+        <android.support.v7.widget.RecyclerView
+                android:id="@+id/rcv_members_less"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+    </FrameLayout>
 </android.support.constraint.ConstraintLayout>

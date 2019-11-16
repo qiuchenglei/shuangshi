@@ -11,7 +11,7 @@
             android:id="@+id/iv_pic_login"
             android:layout_width="@dimen/dp_164"
             android:layout_height="@dimen/dp_234"
-            android:background="@drawable/bg_layout_login_left"
+            android:background="@drawable/layout_login_left"
             android:src="@drawable/pic_login"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/layout_login"
@@ -23,7 +23,7 @@
             android:id="@+id/layout_login"
             android:layout_width="@dimen/dp_164"
             android:layout_height="@dimen/dp_234"
-            android:background="@drawable/bg_layout_login_right"
+            android:background="@drawable/layout_login_right"
             android:padding="@dimen/dp_10"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -98,7 +98,7 @@
                     android:id="@+id/iv_radio_btn_teacher"
                     android:layout_width="@dimen/dp_7"
                     android:layout_height="match_parent"
-                    android:src="@drawable/bg_radio_button" />
+                    android:src="@drawable/ic_radio_button" />
 
             <TextView
                     android:id="@+id/tv_radio_btn_teacher"
@@ -108,14 +108,14 @@
                     android:gravity="center_vertical"
                     android:paddingStart="@dimen/dp_1"
                     android:text="@string/radio_button_text_teacher"
-                    android:textColor="@drawable/tv_color_radio_button"
+                    android:textColor="@drawable/color_999999_44a2fc"
                     android:textSize="@dimen/dp_7" />
 
             <ImageView
                     android:id="@+id/iv_radio_btn_student"
                     android:layout_width="@dimen/dp_7"
                     android:layout_height="match_parent"
-                    android:src="@drawable/bg_radio_button" />
+                    android:src="@drawable/ic_radio_button" />
 
             <TextView
                     android:id="@+id/tv_radio_btn_student"
@@ -124,7 +124,7 @@
                     android:gravity="center"
                     android:paddingStart="@dimen/dp_1"
                     android:text="@string/radio_button_text_student"
-                    android:textColor="@drawable/tv_color_radio_button"
+                    android:textColor="@drawable/color_999999_44a2fc"
                     android:textSize="@dimen/dp_7" />
         </LinearLayout>
 
@@ -134,7 +134,7 @@
                 android:layout_width="0dp"
                 android:layout_height="@dimen/dp_19"
                 android:layout_marginBottom="@dimen/dp_28"
-                android:background="@drawable/tv_bg_join_classroom"
+                android:background="@drawable/btn_circle_44a2fc"
                 android:gravity="center"
                 android:text="@string/join_class_room"
                 android:textColor="@color/white"

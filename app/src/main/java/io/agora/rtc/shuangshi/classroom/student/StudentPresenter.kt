@@ -9,6 +9,7 @@ import io.agora.rtc.lib.projection.Projection
 import io.agora.rtc.lib.util.LogUtil
 import io.agora.rtc.lib.util.stringForTime
 import io.agora.rtc.shuangshi.classroom.Member
+import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.shuangshi.setting.SettingFragmentDialog
 import io.agora.rtc.shuangshi.widget.dialog.MyDialogFragment
 import io.agora.rtc.video.VideoCanvas
@@ -26,8 +27,23 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
             userName,
             userId,
             object : StudentInteractor.ClassStatusListener() {
+                override fun onUpdateTimeStamp(timestampS: Long) {
+                    handler?.post {
+                        if (isInClass != timestampS > 0) {
+                            isInClass = timestampS > 0
+                            handler?.removeCallbacks(timerRunnable)
+                            if (isInClass) {
+                                mTimerCount = System.currentTimeMillis() / 1000 - timestampS
+                                handler?.post(timerRunnable)
+                            } else {
+                                mView?.updateTimer("00:00:00")
+                            }
+                        }
+                    }
+                }
+
                 override fun onPartChange(changeList: MutableList<Member>) {
-                    handler?.post{
+                    handler?.post {
                         mView?.onPartChanged(changeList)
                     }
                 }
@@ -38,10 +54,11 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
                             R.string.teacher_call_notification_text,
                             object : MyDialogFragment.DialogClickListener {
                                 override fun clickYes() {
-                                    mInteractor.onLine(true)
+                                    mInteractor.acceptCall(true)
                                 }
 
                                 override fun clickNo() {
+                                    mInteractor.acceptCall(false)
                                 }
 
                             }, "call_notification"
@@ -89,7 +106,7 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
             showTeacherMaxUI()
             mView?.dismissAllMembers()
             mView?.dismissStudents()
-        } else if (students.size in 1..3) {
+        } else if (allMembers.size < 5) {
             mView?.dismissTeacherMax()
             mView?.showAllMembers(allMembers)
             mView?.dismissStudents()
@@ -125,26 +142,6 @@ class StudentPresenter(var mView: StudentView?, val mInteractor: StudentInteract
     }
 
     private var isInClass = false
-    fun onClickBeginClass() {
-        isInClass = !isInClass
-        mView?.showInClass(isInClass)
-
-        handler?.removeCallbacks(timerRunnable)
-        if (isInClass) {
-            mTimerCount = 0L
-            handler?.post(timerRunnable)
-        } else {
-            mView?.updateTimer("00:00:00")
-        }
-
-        if (isInClass) {
-            updateMembersUI()
-            mInteractor.updateTimeStamp(System.currentTimeMillis() / 1000)
-        } else {
-            showTeacherMaxUI()
-            mInteractor.updateTimeStamp(-1)
-        }
-    }
 
     fun onClickClose() {
         mView?.showDialog(

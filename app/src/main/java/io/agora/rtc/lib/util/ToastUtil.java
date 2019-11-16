@@ -20,13 +20,15 @@ public class ToastUtil {
     public static void showShort(String msg) {
         Toast.makeText(getAppContext(), msg, Toast.LENGTH_SHORT).show();
     }
+
     public static void showShort(@StringRes int msg) {
         Toast.makeText(getAppContext(), msg, Toast.LENGTH_SHORT).show();
     }
 
     public static void showErrorShort(Context context, @StringRes int msg) {
-        if (context == null)
+        if (context == null) {
             return;
+        }
         Toast toast = Toast.makeText(context, msg, Toast.LENGTH_SHORT);
         TextView textView = new TextView(context);
         textView.setTextColor(ContextCompat.getColor(context, R.color.colorAccent));
@@ -35,9 +37,11 @@ public class ToastUtil {
         toast.setView(textView);
         toast.show();
     }
+
     public static void showErrorShort(Context context, String msg) {
-        if (context == null)
+        if (context == null) {
             return;
+        }
         Toast toast = Toast.makeText(context, msg, Toast.LENGTH_SHORT);
         TextView textView = new TextView(context);
         textView.setTextColor(ContextCompat.getColor(context, R.color.colorAccent));
@@ -48,15 +52,15 @@ public class ToastUtil {
     }
 
     public static void showErrorShortFromSubThread(final Activity activity, @StringRes final int msg) {
-        if (activity == null || activity.isFinishing())
+        if (activity == null || activity.isFinishing()) {
             return;
-
+        }
         activity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                if (activity.isFinishing())
+                if (activity.isFinishing()) {
                     return;
-
+                }
                 Toast toast = Toast.makeText(activity, msg, Toast.LENGTH_SHORT);
                 TextView textView = new TextView(activity);
                 textView.setTextColor(ContextCompat.getColor(activity, R.color.colorAccent));

@@ -27,7 +27,7 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
             userId,
             object : TeacherInteractor.ClassStatusListener() {
                 override fun onPartChange(changeList: MutableList<Member>) {
-                    handler?.post{
+                    handler?.post {
                         mView?.onPartChanged(changeList)
                     }
                 }
@@ -66,7 +66,10 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
         updateMembersUI()
     }
 
-    fun onClickTeacherShare(isSharing: Boolean, callback: ShareScreenActivity.StartShareCallback? = null) {
+    fun onClickTeacherShare(
+        isSharing: Boolean,
+        callback: ShareScreenActivity.StartShareCallback? = null
+    ) {
         mInteractor.setTeacherShare(isSharing)
         if (isSharing) {
             mView?.startShare(callback)
@@ -148,14 +151,12 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
         if (isInClass) {
             mTimerCount = 0L
             handler?.post(timerRunnable)
+            updateMembersUI()
+            mInteractor.updateTimeStamp(System.currentTimeMillis() / 1000)
         } else {
             mView?.updateTimer("00:00:00")
-        }
-
-        if (isInClass) {
-            updateMembersUI()
-        } else {
             showTeacherMaxUI()
+            mInteractor.updateTimeStamp(-1)
         }
     }
 
@@ -179,13 +180,10 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
     }
 
     fun onCallStudent(bean: Member) {
-//        if (bean.online_state == 5) {
-//            showToast("你让${bean.user_name}下线了")
-//        }
-        mInteractor.onCallStudent(bean)
-        if (bean.online_state == 4) {
+        if (!bean.is_online) {
             showToast("你对${bean.user_name}发送了点名邀请")
         }
+        mInteractor.onCallStudent(bean)
     }
 
     private fun showToast(s: String) {
@@ -196,7 +194,7 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
 
     fun onStartProjection(
         bean: Member = mInteractor.getTeacherAttr()
-    ) : Boolean {
+    ): Boolean {
         if (mView == null)
             return bean.is_projection
 

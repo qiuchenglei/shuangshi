@@ -27,15 +27,16 @@ public class RtmManager {
     private final LogUtil log = new LogUtil("RtmManager");
 
     private RtmClient mRtmClient;
-    private Set<MyRtmClientListener> mListenerList = new LinkedHashSet<>();
+    private List<MyRtmClientListener> mListenerList = new ArrayList<>();
 
-    private RtmManager(Context context, String appID) {
-        init(context, appID);
+    private RtmManager(Context context, String appId) {
+        init(context, appId);
     }
 
     public static RtmManager createInstance(Context context, String appId) {
-        if (context == null || TextUtils.isEmpty(appId))
+        if (context == null || TextUtils.isEmpty(appId)) {
             return null;
+        }
 
         return new RtmManager(context, appId);
     }
@@ -45,8 +46,9 @@ public class RtmManager {
         public void onConnectionStateChanged(int state, int reason) {
             log.i("state:" + state + ",reason:" + reason);
             for (MyRtmClientListener listener : mListenerList) {
-                if (listener != null)
+                if (listener != null) {
                     listener.onConnectionStateChanged(state, reason);
+                }
             }
         }
 
@@ -55,8 +57,9 @@ public class RtmManager {
             log.i("msgArgs:" + rtmMessage.getText() + ", peerId：" + peerId);
 
             for (MyRtmClientListener listener : mListenerList) {
-                if (listener != null)
+                if (listener != null) {
                     listener.onMessageReceived(rtmMessage, peerId);
+                }
             }
         }
 
@@ -66,9 +69,9 @@ public class RtmManager {
         }
     };
 
-    private void init(Context context, String appID) {
+    private void init(Context context, String appId) {
         try {
-            mRtmClient = RtmClient.createInstance(context, appID, mClientListener);
+            mRtmClient = RtmClient.createInstance(context, appId, mClientListener);
 
             if (BuildConfig.DEBUG) {
 //                mRtmClient.setParameters("{\"rtm.log_filter\": 65535}");
@@ -85,11 +88,16 @@ public class RtmManager {
     public static int LOGIN_STATUS_FAILURE = 3;
     private volatile int loginStatus = LOGIN_STATUS_IDLE;
 
+    public int getLoginStatus() {
+        return loginStatus;
+    }
+
     private void changeLoginStatus(int status) {
         loginStatus = status;
         for (MyRtmClientListener listener : mListenerList) {
-            if (listener != null)
+            if (listener != null) {
                 listener.onLoginStatusChanged(status);
+            }
         }
     }
 
@@ -141,8 +149,9 @@ public class RtmManager {
 
 
     public RtmChannel createChannel(String channel, RtmChannelListener rtmChannelListener) {
-        if (TextUtils.isEmpty(channel))
+        if (TextUtils.isEmpty(channel)) {
             return null;
+        }
 
         try {
             log.i("create channel." + channel);
@@ -155,8 +164,9 @@ public class RtmManager {
     }
 
     public void joinChannel(RtmChannel rtmChannel, ResultCallback<Void> callback) {
-        if (rtmChannel != null)
+        if (rtmChannel != null) {
             rtmChannel.join(callback);
+        }
     }
 
     public void leaveChannel(RtmChannel rtmChannel) {
@@ -176,12 +186,9 @@ public class RtmManager {
     }
 
     public void releaseChannel(RtmChannel rtmChannel) {
-        if (rtmChannel != null)
+        if (rtmChannel != null) {
             rtmChannel.release();
-    }
-
-    public interface LoginStatusListener {
-        void onLoginStatusChanged(int loginStatus);
+        }
     }
 
     public RtmClient getRtmClient() {
@@ -193,8 +200,20 @@ public class RtmManager {
         listener.onLoginStatusChanged(loginStatus);
     }
 
-    public interface MyRtmClientListener extends RtmClientListener {
-        void onLoginStatusChanged(int loginStatus);
+    public static class MyRtmClientListener implements RtmClientListener {
+        public void onLoginStatusChanged(int loginStatus){}
+
+        @Override
+        public void onConnectionStateChanged(int i, int i1) {
+        }
+
+        @Override
+        public void onMessageReceived(RtmMessage rtmMessage, String s) {
+        }
+
+        @Override
+        public void onTokenExpired() {
+        }
     }
 
     public void unregisterListener(MyRtmClientListener listener) {
@@ -202,8 +221,9 @@ public class RtmManager {
     }
 
     public void sendP2PMsg(String peerId, String msg, final ResultCallback<Void> callback) {
-        if (msg == null)
+        if (msg == null) {
             return;
+        }
 
         RtmMessage rtmMessage = mRtmClient.createMessage();
         rtmMessage.setText(msg);

@@ -10,16 +10,24 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
+import com.google.gson.Gson
 import io.agora.rtc.lib.rtm.RtmManager
 import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.lib.util.AppUtil
+import io.agora.rtc.lib.util.SPUtil
 import io.agora.rtc.lib.util.ToastUtil
 import io.agora.rtc.shuangshi.base.BaseActivity
+import io.agora.rtc.shuangshi.classroom.Member
 import io.agora.rtc.shuangshi.classroom.student.ClassRoomStudentActivity
 import io.agora.rtc.shuangshi.classroom.teacher.ClassRoomTeacherActivity
 import io.agora.rtc.shuangshi.constant.IntentKey
+import io.agora.rtc.shuangshi.constant.SPKey
 import io.agora.rtc.shuangshi.setting.SettingFragmentDialog
+import io.agora.rtm.ErrorInfo
+import io.agora.rtm.ResultCallback
+import io.agora.rtm.RtmChannelAttribute
 import io.agora.rtm.RtmMessage
+import kotlin.math.absoluteValue
 
 class MainActivity : BaseActivity(), View.OnClickListener {
     lateinit var ivSetting: ImageView
@@ -33,6 +41,9 @@ class MainActivity : BaseActivity(), View.OnClickListener {
     lateinit var tvRadioBtnStudent: TextView
     lateinit var tvBtnJoin: TextView
     private val permissionCode = 1001
+
+    private var roomName = ""
+    private var userName = ""
     private var role: Role = Role.STUDENT
 
     private lateinit var mLayoutLoading: FrameLayout
@@ -69,6 +80,11 @@ class MainActivity : BaseActivity(), View.OnClickListener {
         AGApplication.the().initSpUtil()
         AGApplication.the().initWorkerThread()
         AGApplication.the().initRtmManager()
+        userId = SPUtil.get(SPKey.MY_USER_ID, 0)
+        if (userId < 1) {
+            userId = System.nanoTime().toInt().absoluteValue
+            SPUtil.put(SPKey.MY_USER_ID, userId)
+        }
     }
 
     override fun onClick(v: View?) {
@@ -87,7 +103,7 @@ class MainActivity : BaseActivity(), View.OnClickListener {
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
                 )
                 if (AppUtil.checkAndRequestAppPermission(this, permission, permissionCode)) {
-                    joinClassRoom()
+                    clickJoin()
                 }
             }
         }
@@ -108,41 +124,40 @@ class MainActivity : BaseActivity(), View.OnClickListener {
                 isAllGranted = false
         }
         if (isAllGranted)
-            joinClassRoom()
+            clickJoin()
         else
             ToastUtil.showShort(R.string.No_enough_permissions)
     }
 
-    val rtmListener = object : RtmManager.MyRtmClientListener{
-        override fun onTokenExpired() {
-        }
+    fun getChannelAttr() {
+        rtmManager().rtmClient.getChannelAttributes(
+            roomName,
+            object : ResultCallback<MutableList<RtmChannelAttribute>> {
+                override fun onSuccess(p0: MutableList<RtmChannelAttribute>?) {
+                    runOnUiThread {
+                        joinRoom(p0)
+                    }
+                }
 
+                override fun onFailure(p0: ErrorInfo?) {
+                    runOnUiThread {
+                        joinRoom(null)
+                    }
+                }
+
+            })
+    }
+
+    val rtmListener = object : RtmManager.MyRtmClientListener() {
         override fun onLoginStatusChanged(loginStatus: Int) {
             if (loginStatus == RtmManager.LOGIN_STATUS_SUCCESS) {
+                rtmManager().unregisterListener(this)
                 runOnUiThread {
-                    mLayoutLoading.visibility = View.GONE
-                    val roomNameStr = edtRoomName.text.toString().trim()
-                    if (TextUtils.isEmpty(roomNameStr)) {
-                        ToastUtil.showShort(R.string.Class_room_name_can_not_be_empty)
-                        return@runOnUiThread
-                    }
-                    val userNameStr = edtUserName.text.toString().trim()
-                    if (TextUtils.isEmpty(userNameStr)) {
-                        ToastUtil.showShort(R.string.User_name_can_not_be_empty)
-                        return@runOnUiThread
-                    }
-                    val intent = Intent()
                     if (role == Role.TEACHER) {
-                        intent.setClass(this@MainActivity, ClassRoomTeacherActivity::class.java)
+                        getChannelAttr()
                     } else {
-                        intent.setClass(this@MainActivity, ClassRoomStudentActivity::class.java)
+                        joinRoom(null)
                     }
-                    intent.putExtra(IntentKey.INTENT_KEY_ROOM_NAME, roomNameStr)
-                        .putExtra(IntentKey.INTENT_KEY_USER_NAME, userNameStr)
-                        .putExtra(IntentKey.INTENT_KEY_USER_ID, userId)
-                    startActivity(intent)
-
-                    rtmManager().unregisterListener(this)
                 }
             } else if (loginStatus == RtmManager.LOGIN_STATUS_FAILURE) {
                 runOnUiThread {
@@ -151,19 +166,62 @@ class MainActivity : BaseActivity(), View.OnClickListener {
                 }
             }
         }
-
-        override fun onConnectionStateChanged(p0: Int, p1: Int) {
-        }
-
-        override fun onMessageReceived(p0: RtmMessage?, p1: String?) {
-        }
-
     }
 
-    private fun joinClassRoom() {
-        userId = Math.abs(System.nanoTime().toInt())
-        rtmManager().registerListener(rtmListener)
-        rtmManager().login(userId.toString())
+    private fun joinRoom(p0: MutableList<RtmChannelAttribute>?) {
+        if (isFinishing)
+            return
+        mLayoutLoading.visibility = View.GONE
+        if (p0 != null && p0.isNotEmpty()) {
+            val gson = Gson()
+            for (it in p0) {
+                if (!TextUtils.isEmpty(it.key) && !TextUtils.isEmpty(it.value)) {
+                    val member = gson.fromJson(it.value, Member::class.java)
+                    if (member.class_role == Role.TEACHER.intValue()) {
+                        if (member.uid != 0 && member.uid != userId) {
+                            ToastUtil.showShort(R.string.There_are_another_teacher_in_this_class)
+                            return
+                        }
+                        break
+                    }
+                }
+            }
+        }
+        val intent = Intent()
+        if (role == Role.TEACHER) {
+            intent.setClass(this@MainActivity, ClassRoomTeacherActivity::class.java)
+        } else {
+            intent.setClass(this@MainActivity, ClassRoomStudentActivity::class.java)
+        }
+        intent.putExtra(IntentKey.INTENT_KEY_ROOM_NAME, roomName)
+            .putExtra(IntentKey.INTENT_KEY_USER_NAME, userName)
+            .putExtra(IntentKey.INTENT_KEY_USER_ID, userId)
+        startActivity(intent)
+    }
+
+    private fun clickJoin() {
+        roomName = edtRoomName.text.toString().trim()
+        if (TextUtils.isEmpty(roomName)) {
+            ToastUtil.showShort(R.string.Class_room_name_can_not_be_empty)
+            return
+        }
+        userName = edtUserName.text.toString().trim()
+        if (TextUtils.isEmpty(userName)) {
+            ToastUtil.showShort(R.string.User_name_can_not_be_empty)
+            return
+        }
+
+        if (rtmManager().loginStatus != RtmManager.LOGIN_STATUS_SUCCESS) {
+            rtmManager().logout()
+            rtmManager().registerListener(rtmListener)
+            rtmManager().login(userId.toString())
+        } else {
+            if (role == Role.TEACHER) {
+                getChannelAttr()
+            } else {
+                joinRoom(null)
+            }
+        }
         mLayoutLoading.visibility = View.VISIBLE
     }
 

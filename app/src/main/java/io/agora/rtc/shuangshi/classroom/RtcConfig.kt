@@ -8,7 +8,7 @@ import io.agora.rtc.shuangshi.constant.SPKey
 import io.agora.rtc.shuangshi.constant.VideoProfile
 import io.agora.rtc.video.VideoEncoderConfiguration
 
-public fun rtcConfig(rtcEngine: RtcEngine) {
+fun rtcConfig(rtcEngine: RtcEngine) {
     val isHighQuality = SPUtil.get(SPKey.AUDIO_HIGH_QUALITY, AudioProfile.IS_HIGH_QUALITY_DEFAULT)
     val isStereo = SPUtil.get(SPKey.AUDIO_STEREO, AudioProfile.IS_STEREO_DEFAULT)
     val speakerVolume = SPUtil.get(SPKey.AUDIO_SPEAKER_PHONE_VOLUME, AudioProfile.SPEAKER_VOLUME_DEFAULT)
@@ -49,7 +49,7 @@ public fun rtcConfig(rtcEngine: RtcEngine) {
     }
 }
 
-public fun changeConfigInChannel(rtcEngine: RtcEngine) {
+fun changeConfigInChannel(rtcEngine: RtcEngine) {
     // setAudioProfile() or che.hardware_encoding will not work in channel
 
     val speakerVolume = SPUtil.get(SPKey.AUDIO_SPEAKER_PHONE_VOLUME, AudioProfile.SPEAKER_VOLUME_DEFAULT)

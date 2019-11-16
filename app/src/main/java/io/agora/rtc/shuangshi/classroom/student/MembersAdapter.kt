@@ -1,5 +1,6 @@
 package io.agora.rtc.shuangshi.classroom.student
 
+import android.content.Context
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.SurfaceView
@@ -16,19 +17,25 @@ import io.agora.rtc.shuangshi.base.RcvBaseAdapter
 import io.agora.rtc.shuangshi.classroom.Member
 import io.agora.rtc.shuangshi.widget.projection.ProjectionView
 
-class MembersAdapter(private val mPresenter: StudentPresenter, private val myUserId: Int) :
+abstract class MembersAdapter(private val mPresenter: StudentPresenter, private val myUserId: Int) :
     RcvBaseAdapter<Member, MembersAdapter.MyViewHolder>() {
     override fun isEqual(old: Member, new: Member): Boolean {
         return old.uid == new.uid
     }
 
+    abstract fun getItemWidth(ctx: Context): Int
+    abstract fun getItemHeight(ctx: Context): Int
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
+        val ctx = parent.context
         if (viewType == 1) {
             return MyViewHolder(
                 LayoutInflater.from(parent.context).inflate(
                     R.layout.layout_teacher_for_student, parent,
                     false
                 ),
+                getItemWidth(ctx),
+                getItemHeight(ctx),
                 1
             )
         }
@@ -36,26 +43,33 @@ class MembersAdapter(private val mPresenter: StudentPresenter, private val myUse
             LayoutInflater.from(parent.context).inflate(
                 R.layout.layout_student_for_student, parent,
                 false
-            )
+            ),
+            getItemWidth(ctx),
+            getItemHeight(ctx)
         )
     }
 
-    override fun onBindViewHolder(viewHolder: MyViewHolder, position: Int, bean: Member, payloads: MutableList<Any>) {
+    override fun onBindViewHolder(
+        viewHolder: MyViewHolder,
+        position: Int,
+        bean: Member,
+        payloads: MutableList<Any>
+    ) {
         val ctx = viewHolder.itemView.context
-        if (itemCount < 2) {
-            viewHolder.itemView.layoutParams.width = DensityUtil.getScreenWidth(ctx)
-        } else {
-            viewHolder.itemView.layoutParams.width = DensityUtil.getScreenWidth(ctx) / 2
+        val width = getItemWidth(ctx)
+        if (width != viewHolder.itemView.layoutParams.width) {
+            viewHolder.itemView.layoutParams.width = width
         }
+
         if (bean.class_role == Role.TEACHER.intValue()) {
             viewHolder.mIconMax?.setOnClickListener {
                 mPresenter.onClickTeacherMinOrMax(true)
             }
         } else {
+            viewHolder.mName.isSelected = bean.is_online
             if (myUserId == bean.uid) {
                 viewHolder.mLayoutMe?.visibility = View.VISIBLE
                 viewHolder.mIconSpeaker.visibility = View.GONE
-
                 viewHolder.mIconMic?.isSelected = bean.is_mute_audio
                 viewHolder.mIconCamera?.isSelected = bean.is_mute_video
                 viewHolder.mIconMic?.setOnClickListener {
@@ -137,7 +151,8 @@ class MembersAdapter(private val mPresenter: StudentPresenter, private val myUse
         return if (mList[position].class_role == Role.TEACHER.intValue()) 1 else 0
     }
 
-    class MyViewHolder(itemView: View, viewType: Int = 0) : RecyclerView.ViewHolder(itemView) {
+    class MyViewHolder(itemView: View, width: Int, height: Int, viewType: Int = 0) :
+        RecyclerView.ViewHolder(itemView) {
         // Teacher
         var mIconMax: ImageView? = null
         // student
@@ -164,6 +179,8 @@ class MembersAdapter(private val mPresenter: StudentPresenter, private val myUse
                 mLayoutMe = itemView.findViewById(R.id.fl_me)
             }
             mProjectionView = itemView.findViewById(R.id.projection_view)
+
+            itemView.layoutParams = ViewGroup.LayoutParams(width, height)
         }
 
     }

@@ -90,4 +90,6 @@
     <string name="projectionView">投屏</string>
 
     <string name="text_close_share">退出共享</string>
+
+    <string name="There_are_another_teacher_in_this_class">这个教室已存在主讲，请选择其他房间进入</string>
 </resources>
