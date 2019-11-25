@@ -31,14 +31,11 @@ abstract class RcvBaseAdapter<T, VH : RecyclerView.ViewHolder> : RecyclerView.Ad
     fun addItem(item: T?) {
         if (item == null)
             return
-        if (mList == null)
-            mList = ArrayList()
-
-        mList!!.add(item)
+        mList.add(item)
     }
 
     override fun getItemCount(): Int {
-        return if (mList == null) 0 else mList!!.size
+        return mList.size
     }
 
     override fun getItemId(position: Int): Long {
@@ -46,15 +43,15 @@ abstract class RcvBaseAdapter<T, VH : RecyclerView.ViewHolder> : RecyclerView.Ad
     }
 
     fun getItem(position: Int): T {
-        return mList!![position]
+        return mList[position]
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        onBindViewHolder(holder, position, mList!![position], mutableListOf())
+        onBindViewHolder(holder, position, mList[position], mutableListOf())
     }
 
     override fun onBindViewHolder(holder: VH, position: Int, payloads: MutableList<Any>) {
-        onBindViewHolder(holder, position, mList!![position], payloads)
+        onBindViewHolder(holder, position, mList[position], payloads)
     }
 
     abstract fun onBindViewHolder(

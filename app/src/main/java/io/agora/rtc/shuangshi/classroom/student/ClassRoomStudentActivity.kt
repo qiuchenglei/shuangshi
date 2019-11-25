@@ -70,7 +70,7 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
 
         mTeacherMaxTvName.text = teacherAttr.user_name
         mTeacherMaxIcSpeaker.isSelected = teacherAttr.is_mute_audio
-        if (isInClass && !teacherAttr.is_mute_video) {
+        if (!teacherAttr.is_mute_video) {
             mTeacherMaxLayoutBg.visibility = View.GONE
             mTeacherMaxLayoutVideo.visibility = View.VISIBLE
         } else {
@@ -275,8 +275,8 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
         mPresenter.onInit(roomName, userName, userId)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun finish() {
+        super.finish()
         mPresenter.onDestroy()
     }
 

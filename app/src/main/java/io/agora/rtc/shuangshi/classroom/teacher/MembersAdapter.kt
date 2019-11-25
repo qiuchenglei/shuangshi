@@ -127,7 +127,7 @@ abstract class MembersAdapter(val mPresenter: TeacherPresenter) :
         viewHolder.mProjectionView.projectionListener =
             object : ProjectionView.OnProjectionListener {
                 override fun onStartProjection() {
-                    mPresenter.onStartProjection()
+                    mPresenter.onStartProjection(bean)
                     if (bean.is_projection) {
                         viewHolder.mLayoutVideo.visibility = View.GONE
                         viewHolder.mLayoutVideo.removeAllViews()

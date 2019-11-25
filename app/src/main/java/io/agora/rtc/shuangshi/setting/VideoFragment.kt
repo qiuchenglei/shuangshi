@@ -18,7 +18,7 @@ class VideoFragment : Fragment() {
     private lateinit var mTvVideoFpsSelect: TextView
     private lateinit var mTvVideoBitrateSelect: TextView
     private lateinit var mTvVideoCodecSelect: TextView
-    private lateinit var mTvVideoResolutionSelect: TextView
+    private lateinit var mTvVideoDimensionSelect: TextView
     private lateinit var mFlVideoLayout: FrameLayout
 
     override fun onCreateView(
@@ -30,14 +30,14 @@ class VideoFragment : Fragment() {
         mTvVideoFpsSelect = root.findViewById<TextView>(R.id.tv_video_fps_select)
         mTvVideoBitrateSelect = root.findViewById<TextView>(R.id.tv_video_bitrate_select)
         mTvVideoCodecSelect = root.findViewById<TextView>(R.id.tv_video_codec_select)
-        mTvVideoResolutionSelect = root.findViewById<TextView>(R.id.tv_video_resolution_select)
+        mTvVideoDimensionSelect = root.findViewById<TextView>(R.id.tv_video_resolution_select)
         mFlVideoLayout = root.findViewById(R.id.fl_video_layout)
 
         mTvVideoInputSelect.setOnClickListener { mVideoSettingPresenter.onClickInput() }
         mTvVideoFpsSelect.setOnClickListener { mVideoSettingPresenter.onClickFps() }
         mTvVideoBitrateSelect.setOnClickListener { mVideoSettingPresenter.onClickVideoBitrate() }
         mTvVideoCodecSelect.setOnClickListener { mVideoSettingPresenter.onClickVideoCodec() }
-        mTvVideoResolutionSelect.setOnClickListener { mVideoSettingPresenter.onClickVideoResolution() }
+        mTvVideoDimensionSelect.setOnClickListener { mVideoSettingPresenter.onClickVideoResolution() }
 
         mVideoSettingPresenter.onCreate()
         return root
@@ -72,15 +72,15 @@ class VideoFragment : Fragment() {
         selectedIndex: Int,
         listener: OnSelectListener
     ) {
-        showSettingItems(resolutionArray, selectedIndex, listener, mTvVideoResolutionSelect)
+        showSettingItems(resolutionArray, selectedIndex, listener, mTvVideoDimensionSelect)
     }
 
     fun updateFpsText(s: String) {
         mTvVideoFpsSelect.text = s
     }
 
-    fun updateResolutionText(s: String) {
-        mTvVideoResolutionSelect.text = s
+    fun updateDimensionText(s: String) {
+        mTvVideoDimensionSelect.text = s
     }
 
     fun updateCodecText(s: String) {

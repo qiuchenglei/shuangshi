@@ -26,6 +26,22 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
             userName,
             userId,
             object : TeacherInteractor.ClassStatusListener() {
+                override fun onUpdateTimeStamp(timestampS: Long) {
+                    handler?.post {
+                        if (isInClass != timestampS > 0) {
+                            isInClass = timestampS > 0
+                            handler?.removeCallbacks(timerRunnable)
+                            if (isInClass) {
+                                mTimerCount = System.currentTimeMillis() / 1000 - timestampS
+                                handler?.post(timerRunnable)
+                            } else {
+                                mView?.updateTimer("00:00:00")
+                            }
+                            mView?.showInClass(isInClass)
+                        }
+                    }
+                }
+
                 override fun onPartChange(changeList: MutableList<Member>) {
                     handler?.post {
                         mView?.onPartChanged(changeList)
@@ -151,11 +167,9 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
         if (isInClass) {
             mTimerCount = 0L
             handler?.post(timerRunnable)
-            updateMembersUI()
             mInteractor.updateTimeStamp(System.currentTimeMillis() / 1000)
         } else {
             mView?.updateTimer("00:00:00")
-            showTeacherMaxUI()
             mInteractor.updateTimeStamp(-1)
         }
     }

@@ -15,7 +15,7 @@ import io.agora.rtc.shuangshi.R
 import io.agora.rtc.shuangshi.view.CheckableLinearLayout
 
 class SettingFragmentDialog : DialogFragment() {
-    public interface SettingListener {
+    interface SettingListener {
         fun onApply()
 
         fun onCancel()

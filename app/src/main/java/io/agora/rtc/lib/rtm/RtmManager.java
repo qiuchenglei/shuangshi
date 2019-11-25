@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import io.agora.rtc.shuangshi.AGApplication;
@@ -29,16 +30,17 @@ public class RtmManager {
     private RtmClient mRtmClient;
     private List<MyRtmClientListener> mListenerList = new ArrayList<>();
 
+    private static RtmManager rtmManager;
+
     private RtmManager(Context context, String appId) {
         init(context, appId);
     }
 
-    public static RtmManager createInstance(Context context, String appId) {
-        if (context == null || TextUtils.isEmpty(appId)) {
-            return null;
+    public static synchronized RtmManager createInstance(Context context, String appId) {
+        if (context != null && !TextUtils.isEmpty(appId) && rtmManager == null) {
+            rtmManager = new RtmManager(context, appId);
         }
-
-        return new RtmManager(context, appId);
+        return rtmManager;
     }
 
     private RtmClientListener mClientListener = new RtmClientListener() {
@@ -67,6 +69,10 @@ public class RtmManager {
         public void onTokenExpired() {
             log.i("onTokenExpired");
         }
+
+        @Override
+        public void onPeersOnlineStatusChanged(Map<String, Integer> map) {
+        }
     };
 
     private void init(Context context, String appId) {
@@ -74,7 +80,7 @@ public class RtmManager {
             mRtmClient = RtmClient.createInstance(context, appId, mClientListener);
 
             if (BuildConfig.DEBUG) {
-//                mRtmClient.setParameters("{\"rtm.log_filter\": 65535}");
+                mRtmClient.setParameters("{\"rtm.log_filter\": 65535}");
             }
         } catch (Exception e) {
             log.e(Log.getStackTraceString(e));
@@ -118,6 +124,7 @@ public class RtmManager {
 
             @Override
             public void onFailure(ErrorInfo errorInfo) {
+                log.i("login failed");
                 // 如果error是rejected，可能已经在房间导致，尝试退出重登
                 if (retryCount > 1 || errorInfo.getErrorCode() != RtmStatusCode.LoginError.LOGIN_ERR_REJECTED) {
                     changeLoginStatus(LOGIN_STATUS_FAILURE);
@@ -201,7 +208,8 @@ public class RtmManager {
     }
 
     public static class MyRtmClientListener implements RtmClientListener {
-        public void onLoginStatusChanged(int loginStatus){}
+        public void onLoginStatusChanged(int loginStatus) {
+        }
 
         @Override
         public void onConnectionStateChanged(int i, int i1) {
@@ -213,6 +221,10 @@ public class RtmManager {
 
         @Override
         public void onTokenExpired() {
+        }
+
+        @Override
+        public void onPeersOnlineStatusChanged(Map<String, Integer> map) {
         }
     }
 

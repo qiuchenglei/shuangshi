@@ -38,7 +38,7 @@ abstract class ShareScreenActivity : BaseActivity(), SurfaceReadyListener {
         bindService(intent, connection, BIND_AUTO_CREATE)
     }
 
-    public interface StartShareCallback {
+    interface StartShareCallback {
         fun onSuccess()
         fun onFailure()
     }

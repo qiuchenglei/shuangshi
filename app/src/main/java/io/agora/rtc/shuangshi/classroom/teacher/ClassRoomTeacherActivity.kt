@@ -212,7 +212,7 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
             mTeacherMaxLayoutStartShare.visibility = View.GONE
             mPresenter.onClickTeacherShare(
                 true,
-                object : ShareScreenActivity.StartShareCallback {
+                object : StartShareCallback {
                     override fun onSuccess() {}
 
                     override fun onFailure() {
@@ -317,8 +317,8 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
         mPresenter.onInit(roomName, userName, userId)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun finish() {
+        super.finish()
         mPresenter.onDestroy()
     }
 

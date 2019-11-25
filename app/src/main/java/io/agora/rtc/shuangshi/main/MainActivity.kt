@@ -3,7 +3,10 @@ package io.agora.rtc.shuangshi
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.text.TextUtils
 import android.view.View
 import android.widget.EditText
@@ -11,9 +14,11 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import io.agora.rtc.lib.rtm.RtmManager
 import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.lib.util.AppUtil
+import io.agora.rtc.lib.util.LogUtil
 import io.agora.rtc.lib.util.SPUtil
 import io.agora.rtc.lib.util.ToastUtil
 import io.agora.rtc.shuangshi.base.BaseActivity
@@ -26,7 +31,6 @@ import io.agora.rtc.shuangshi.setting.SettingFragmentDialog
 import io.agora.rtm.ErrorInfo
 import io.agora.rtm.ResultCallback
 import io.agora.rtm.RtmChannelAttribute
-import io.agora.rtm.RtmMessage
 import kotlin.math.absoluteValue
 
 class MainActivity : BaseActivity(), View.OnClickListener {
@@ -49,6 +53,7 @@ class MainActivity : BaseActivity(), View.OnClickListener {
     private lateinit var mLayoutLoading: FrameLayout
 
     private var userId = 0
+    private val log = LogUtil("MainActvity")
 
     override fun initUI(savedInstanceState: Bundle?) {
         setContentView(R.layout.activity_main)
@@ -76,14 +81,41 @@ class MainActivity : BaseActivity(), View.OnClickListener {
         selectToStudent()
     }
 
+    override fun onStart() {
+        super.onStart()
+        mLayoutLoading.visibility = View.GONE
+    }
+
     override fun initData() {
         AGApplication.the().initSpUtil()
         AGApplication.the().initWorkerThread()
         AGApplication.the().initRtmManager()
+
+        checkSystemAlertPermission()
         userId = SPUtil.get(SPKey.MY_USER_ID, 0)
         if (userId < 1) {
             userId = System.nanoTime().toInt().absoluteValue
             SPUtil.put(SPKey.MY_USER_ID, userId)
+        }
+
+        log.i("login with userId: $userId")
+        rtmManager().login(userId.toString())
+    }
+
+    private fun checkSystemAlertPermission(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            //SYSTEM_ALERT_WINDOW权限申请
+            if (!Settings.canDrawOverlays(this)) {
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                intent.data = Uri.parse("package:$packageName")//不加会显示所有可能的app
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivityForResult(intent, 1)
+                return false
+            } else {
+                return true
+            }
+        } else {
+            return true
         }
     }
 
@@ -134,9 +166,7 @@ class MainActivity : BaseActivity(), View.OnClickListener {
             roomName,
             object : ResultCallback<MutableList<RtmChannelAttribute>> {
                 override fun onSuccess(p0: MutableList<RtmChannelAttribute>?) {
-                    runOnUiThread {
-                        joinRoom(p0)
-                    }
+                    edtUserName.postDelayed({ joinRoom(p0) }, 800)
                 }
 
                 override fun onFailure(p0: ErrorInfo?) {
@@ -153,11 +183,11 @@ class MainActivity : BaseActivity(), View.OnClickListener {
             if (loginStatus == RtmManager.LOGIN_STATUS_SUCCESS) {
                 rtmManager().unregisterListener(this)
                 runOnUiThread {
-                    if (role == Role.TEACHER) {
-                        getChannelAttr()
-                    } else {
-                        joinRoom(null)
-                    }
+                    //                    if (role == Role.TEACHER) {
+//                        getChannelAttr()
+//                    } else {
+                    joinRoom(null)
+//                    }
                 }
             } else if (loginStatus == RtmManager.LOGIN_STATUS_FAILURE) {
                 runOnUiThread {
@@ -176,14 +206,21 @@ class MainActivity : BaseActivity(), View.OnClickListener {
             val gson = Gson()
             for (it in p0) {
                 if (!TextUtils.isEmpty(it.key) && !TextUtils.isEmpty(it.value)) {
-                    val member = gson.fromJson(it.value, Member::class.java)
-                    if (member.class_role == Role.TEACHER.intValue()) {
-                        if (member.uid != 0 && member.uid != userId) {
-                            ToastUtil.showShort(R.string.There_are_another_teacher_in_this_class)
-                            return
+                    try {
+                        val member = gson.fromJson(
+                            it.value,
+                            Member::class.java
+                        )
+                        if (member.class_role == Role.TEACHER.intValue()) {
+                            if (member.uid != 0 && member.uid != userId) {
+                                ToastUtil.showShort(R.string.There_are_another_teacher_in_this_class)
+                                return
+                            }
+                            break
                         }
-                        break
+                    } catch (e: JsonSyntaxException) {
                     }
+
                 }
             }
         }
@@ -196,6 +233,7 @@ class MainActivity : BaseActivity(), View.OnClickListener {
         intent.putExtra(IntentKey.INTENT_KEY_ROOM_NAME, roomName)
             .putExtra(IntentKey.INTENT_KEY_USER_NAME, userName)
             .putExtra(IntentKey.INTENT_KEY_USER_ID, userId)
+        log.i("join userId:$userId, userName:$userName, channelName:$roomName")
         startActivity(intent)
     }
 
@@ -216,11 +254,11 @@ class MainActivity : BaseActivity(), View.OnClickListener {
             rtmManager().registerListener(rtmListener)
             rtmManager().login(userId.toString())
         } else {
-            if (role == Role.TEACHER) {
-                getChannelAttr()
-            } else {
-                joinRoom(null)
-            }
+//            if (role == Role.TEACHER) {
+//                getChannelAttr()
+//            } else {
+            joinRoom(null)
+//            }
         }
         mLayoutLoading.visibility = View.VISIBLE
     }
@@ -239,6 +277,11 @@ class MainActivity : BaseActivity(), View.OnClickListener {
         tvRadioBtnStudent.isSelected = false
         ivRadioBtnTeacher.isSelected = true
         tvRadioBtnTeacher.isSelected = true
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        rtmManager().logout()
     }
 
 }

@@ -33,7 +33,7 @@ class MyDialogFragment : DialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val root = inflater.inflate(R.layout.dialog_my, container, true)
+        val root = inflater.inflate(R.layout.dialog_my, container, false)
         root.findViewById<View>(R.id.tv_btn_confirm).setOnClickListener {
             listener!!.clickYes()
             dismiss()

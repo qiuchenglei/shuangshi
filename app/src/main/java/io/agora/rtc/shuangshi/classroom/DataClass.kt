@@ -46,10 +46,10 @@ data class Member(
 }
 
 val KEY_OPERATION_INFO = "changed_uid"
-data class OperationInfo(val changed_uid: Int)
+//data class OperationInfo(val changed_uid: Int)
 
 val KEY_TIME_STAMP_S = "timestamp"
-data class TimeStampS(val timeStampS: Long)
+//data class TimeStampS(val timeStamp: Long)
 
 data class P2PMessage(val cmd: Int = CMD_TEXT, var text: String = "") {
     companion object {

@@ -31,6 +31,13 @@ class VideoSettingPresenter(var mView: VideoFragment?) {
         bitrateSelectedIndex = SPUtil.get(SPKey.VIDEO_BITRATE, VideoProfile.BITRATE_DEFAULT_INDEX) // default standard
         codecSelectedIndex = SPUtil.get(SPKey.VIDEO_CODEC, VideoProfile.CODEC_DEFAULT_ENCODE) // default hardware
         dimensionsSelectedIndex = SPUtil.get(SPKey.VIDEO_DIMENSIONS, VideoProfile.VD_DEFAULT_INDEX) // default 480p
+
+        mView?.apply {
+            updateBitrateText(bitrateArray[bitrateSelectedIndex])
+            updateCodecText(codecArray[codecSelectedIndex])
+            updateFpsText(fpsArray[fpsSelectedIndex])
+            updateDimensionText(dimensionsArray[dimensionsSelectedIndex])
+        }
     }
 
     fun onDestroy() {
@@ -81,7 +88,7 @@ class VideoSettingPresenter(var mView: VideoFragment?) {
             dimensionsSelectedIndex,
             object : OnSelectListener {
                 override fun onSelect(index: Int) {
-                    mView?.updateResolutionText(dimensionsArray[index])
+                    mView?.updateDimensionText(dimensionsArray[index])
                     dimensionsSelectedIndex = index
                 }
             })

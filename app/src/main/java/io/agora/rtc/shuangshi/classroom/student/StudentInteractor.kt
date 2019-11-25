@@ -12,12 +12,14 @@ import io.agora.rtc.IRtcEngineEventHandler
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.lib.rtc.RtcConfig
 import io.agora.rtc.lib.rtm.RtmManager
+import io.agora.rtc.lib.util.LogUtil
 import io.agora.rtc.shuangshi.AGApplication
 import io.agora.rtc.shuangshi.classroom.*
 import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rtc.video.VideoEncoderConfiguration
 import io.agora.rtm.*
+import java.lang.Exception
 import java.sql.Timestamp
 
 class StudentInteractor {
@@ -27,6 +29,7 @@ class StudentInteractor {
     private val rtmManager = AGApplication.the().rtmManager
     private var mHandler: Handler? = null
     private var rtmChannel: RtmChannel? = null
+    private val log = LogUtil("StudentInteractor")
 
     lateinit var myAttr: Member
 
@@ -40,6 +43,7 @@ class StudentInteractor {
 
     val rtmChannelListener = object : RtmChannelListener {
         override fun onAttributesUpdated(attributes: MutableList<RtmChannelAttribute>?) {
+            log.i("onAttributesUpdated:")
             if (attributes == null || attributes.isEmpty()) {
                 resetList()
                 return
@@ -52,23 +56,22 @@ class StudentInteractor {
             }
 
             val gson = Gson()
-            val operationInfoJson = mapAttributes.remove(KEY_OPERATION_INFO)
-            //上次修改频道属性的uid，暂时无用
-//                if (!TextUtils.isEmpty(operationInfoJson)) {
-//                    try {
-//                        val operationInfo: OperationInfo =
-//                            gson.fromJson(operationInfoJson, OperationInfo::class.java)
-//                    } catch (e: JsonSyntaxException) {
-//                    }
+            mapAttributes.remove(KEY_OPERATION_INFO)
+//            val operationInfoValue = mapAttributes.remove(KEY_OPERATION_INFO)
+//            if (!TextUtils.isEmpty(operationInfoValue)) {
+//                try {
+//                    val operationUid = operationInfoValue!!.toInt()
+//                } catch (e: JsonSyntaxException) {
 //                }
+//            }
 
             val timestampJson = mapAttributes.remove(KEY_TIME_STAMP_S)
+
             if (!TextUtils.isEmpty(timestampJson)) {
                 try {
-                    val timeStampS = gson.fromJson(timestampJson, TimeStampS::class.java)
-                    statusListener.onUpdateTimeStamp(timeStampS.timeStampS)
-                } catch (e: JsonSyntaxException) {
-
+                    val timeStampS = timestampJson!!.toLong()
+                    statusListener.onUpdateTimeStamp(timeStampS)
+                } catch (e: Exception){
                 }
             }
 
@@ -92,7 +95,7 @@ class StudentInteractor {
                 mapAttributes[it.uid.toString()] == null
             }
 
-            val isRemove = removeStudents.isNotEmpty() && removeTeachers.isNotEmpty()
+            var isRemove = removeStudents.isNotEmpty() || removeTeachers.isNotEmpty()
             var isAdd = false
             val changeList = mutableListOf<Member>()
 
@@ -104,8 +107,8 @@ class StudentInteractor {
                 val member: Member
                 try {
                     member = gson.fromJson(strJson, Member::class.java)
-                } catch (e: JsonSyntaxException) {
-                    break
+                } catch (e: Exception) {
+                    continue
                 }
                 if (member.class_role == Role.TEACHER.intValue()) {
                     val lastValue = teacherMap[member.uid]
@@ -118,9 +121,9 @@ class StudentInteractor {
                             changeList.add(member)
                         }
                     }
-                } else {
-                    if (member.is_online && member.uid != myAttr.uid) {
-                        val lastValue = studentMap[member.uid]
+                } else if (member.uid != myAttr.uid) {
+                    val lastValue = studentMap[member.uid]
+                    if (member.is_online) {
                         if (lastValue == null) {
                             studentList.add(member)
                             studentMap[member.uid] = member
@@ -130,9 +133,13 @@ class StudentInteractor {
                                 changeList.add(member)
                             }
                         }
+                    } else {
+                        if (lastValue != null) {
+                            studentList.remove(studentMap.remove(member.uid))
+                            isRemove = true
+                        }
                     }
                 }
-
             }
 
             allMembers.clear()
@@ -220,6 +227,7 @@ class StudentInteractor {
     }
 
     private fun addOrUpdateMyAttr() {
+        log.i("addOrUpdateMyAttr")
         val rtmChannelAttributeMe = RtmChannelAttribute(
             myAttr.uid.toString(),
             Gson().toJson(myAttr),
@@ -228,7 +236,7 @@ class StudentInteractor {
         )
         val rtmChannelAttributeUpdate = RtmChannelAttribute(
             KEY_OPERATION_INFO,
-            Gson().toJson(OperationInfo(myAttr.uid)),
+            myAttr.uid.toString(),
             myAttr.uid.toString(),
             System.currentTimeMillis()
         )
@@ -239,11 +247,12 @@ class StudentInteractor {
             options,
             object : ResultCallback<Void> {
                 override fun onFailure(p0: ErrorInfo?) {
+                    log.i("addOrUpdateMyAttr failed")
                     statusListener.onErrorInfo("addOrUpdateChannelAttributes failure.", p0)
                 }
 
                 override fun onSuccess(p0: Void?) {
-                    Log.d("haha", "chenggongle")
+                    log.i("addOrUpdateMyAttr success")
                 }
             })
     }
@@ -257,6 +266,7 @@ class StudentInteractor {
     fun joinChannel() {
         rtcWorker.runTask {
             val rtcEngine = rtcWorker.rtcEngine
+            rtcEngine.muteLocalAudioStream(true)
             rtcEngine.joinChannel(null, myAttr.room_name, "", myAttr.uid)
             rtcWorker.setmRtcConfig(RtcConfig(myAttr.uid, myAttr.room_name))
         }
@@ -265,10 +275,12 @@ class StudentInteractor {
         addOrUpdateMyAttr()
         rtmManager.joinChannel(rtmChannel, object : ResultCallback<Void> {
             override fun onSuccess(p0: Void?) {
+                log.i("join rtm channel success")
                 statusListener.onJoinRTMChannelSuccess(p0)
             }
 
             override fun onFailure(p0: ErrorInfo?) {
+                log.i("join rtm channel failed:" + p0.toString())
                 statusListener.onErrorInfo("join channel failure.", p0)
                 leaveChannel()
             }
@@ -289,8 +301,10 @@ class StudentInteractor {
         }
 
         deleteMyAttr()
-        if (rtmChannel != null)
-            rtmManager.leaveChannel(rtmChannel)
+
+        rtmManager.leaveChannel(rtmChannel)
+        rtmManager.releaseChannel(rtmChannel)
+        rtmChannel = null
 
         resetList()
     }
@@ -298,7 +312,7 @@ class StudentInteractor {
     private fun deleteMyAttr() {
         val rtmChannelAttributeUpdate = RtmChannelAttribute(
             KEY_OPERATION_INFO,
-            Gson().toJson(OperationInfo(myAttr.uid)),
+            myAttr.uid.toString(),
             myAttr.uid.toString(),
             System.currentTimeMillis()
         )
@@ -309,11 +323,12 @@ class StudentInteractor {
             options,
             object : ResultCallback<Void> {
                 override fun onFailure(p0: ErrorInfo?) {
+                    log.i("deleteChannelAttributesByKeys failed")
                     statusListener.onErrorInfo("deleteChannelAttributesByKeys failure.", p0)
                 }
 
                 override fun onSuccess(p0: Void?) {
-                    Log.d("haha", "chenggongle")
+                    log.i("deleteChannelAttributesByKeys success")
                 }
             })
         rtmManager.rtmClient.addOrUpdateChannelAttributes(
@@ -322,19 +337,18 @@ class StudentInteractor {
             options,
             object : ResultCallback<Void> {
                 override fun onFailure(p0: ErrorInfo?) {
+                    log.i("addOrUpdateChannelAttributes in delete failed")
                     statusListener.onErrorInfo("addOrUpdateChannelAttributes failure.", p0)
                 }
 
                 override fun onSuccess(p0: Void?) {
-                    Log.d("haha", "chenggongle")
+                    log.i("addOrUpdateChannelAttributes in delete success")
                 }
             })
     }
 
     fun destroy() {
         leaveChannel()
-        rtmManager.releaseChannel(rtmChannel)
-        rtmManager.logout()
         mHandler?.removeCallbacksAndMessages(null)
         mHandler = null
     }
@@ -374,11 +388,9 @@ class StudentInteractor {
 //    }
 
     fun onLine(isOnLine: Boolean) {
-        if (myAttr.is_online != isOnLine) {
-            myAttr.is_online = isOnLine
-            addOrUpdateMyAttr()
-            statusListener.onPartChange(mutableListOf(myAttr))
-        }
+        myAttr.is_online = isOnLine
+        muteLocalAudio(!isOnLine)
+        statusListener.onPartChange(mutableListOf(myAttr))
     }
 
     fun switchLocalAudio(bean: Member) {
@@ -403,13 +415,15 @@ class StudentInteractor {
 
     fun acceptCall(isAccept: Boolean) {
         val teacherAttr = getTeacherAttr()
-        if (teacherAttr == null)
-            return
-        onLine(isAccept)
         if (isAccept) {
-            sendP2PMsg(teacherAttr.uid, Gson().toJson(P2PMessage.CMD_ACCEPT_CALL))
+            if (teacherAttr != null) {
+                sendP2PMsg(teacherAttr.uid, Gson().toJson(P2PMessage.CMD_ACCEPT_CALL))
+            }
+            onLine(true)
         } else {
-            sendP2PMsg(teacherAttr.uid, Gson().toJson(P2PMessage.CMD_REFUSE_CALL))
+            if (teacherAttr != null) {
+                sendP2PMsg(teacherAttr.uid, Gson().toJson(P2PMessage.CMD_REFUSE_CALL))
+            }
         }
     }
 
