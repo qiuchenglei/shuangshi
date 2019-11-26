@@ -24,6 +24,7 @@ import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.shuangshi.setting.SettingFragmentDialog
 import io.agora.rtc.shuangshi.widget.dialog.MyDialogFragment
 import io.agora.rtc.shuangshi.widget.projection.ProjectionView
+import io.agora.rtc.video.ViEEGLSurfaceRenderer
 
 class ClassRoomStudentActivity : BaseActivity(), StudentView {
     override fun onPartChanged(changeList: MutableList<Member>) {
@@ -190,7 +191,7 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
         mTeacherMaxIcMin.setOnClickListener { mPresenter.onClickTeacherMinOrMax(false) }
 //        mTeacherMaxIcSpeaker.setOnClickListener { mPresenter.onClickTeacherSpeaker() }
 
-        mTeacherMaxSurfaceView = RtcEngine.CreateRendererView(this)
+        mTeacherMaxSurfaceView = ViEEGLSurfaceRenderer(applicationContext)
         mTeacherMaxLayoutVideo.addView(
             mTeacherMaxSurfaceView,
             ViewGroup.LayoutParams.MATCH_PARENT,

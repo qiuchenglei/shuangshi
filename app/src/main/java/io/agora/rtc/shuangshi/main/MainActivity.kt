@@ -87,7 +87,6 @@ class MainActivity : BaseActivity(), View.OnClickListener {
     }
 
     override fun initData() {
-        AGApplication.the().initSpUtil()
         AGApplication.the().initWorkerThread()
         AGApplication.the().initRtmManager()
 

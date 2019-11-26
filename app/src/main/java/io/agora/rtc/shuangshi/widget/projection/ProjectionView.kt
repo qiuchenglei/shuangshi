@@ -49,12 +49,12 @@ class ProjectionView : FrameLayout {
         registerLongClick()
     }
 
-    public fun showProjectionPreUI() {
+    fun showProjectionPreUI() {
         mLayoutParent.visibility = View.VISIBLE
         mTvBtnProjection.visibility = View.VISIBLE
     }
 
-    public fun showIsProjectionUI(isProjection: Boolean) {
+    fun showIsProjectionUI(isProjection: Boolean) {
         if (isProjection) {
             mLayoutParent.visibility = View.VISIBLE
             mTvBtnProjection.visibility = View.GONE
@@ -76,7 +76,7 @@ class ProjectionView : FrameLayout {
         setOnClickListener(null)
     }
 
-    public var projectionListener: OnProjectionListener? = null
+    var projectionListener: OnProjectionListener? = null
         set(value) {
             field = value
         }

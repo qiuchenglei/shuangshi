@@ -19,6 +19,9 @@ fun rtcConfig(rtcEngine: RtcEngine) {
     val codecIndex = SPUtil.get(SPKey.VIDEO_CODEC, VideoProfile.CODEC_DEFAULT_ENCODE)
 
     rtcEngine.apply {
+
+        setChannelProfile(Constants.CHANNEL_PROFILE_LIVE_BROADCASTING)
+        enableWebSdkInteroperability(true)
         enableAudio()
         enableVideo()
         setClientRole(Constants.CLIENT_ROLE_BROADCASTER)
@@ -43,6 +46,9 @@ fun rtcConfig(rtcEngine: RtcEngine) {
                 VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_LANDSCAPE
             )
         )
+        setParameters("{\"che.video.render.texture.output\": true}")//texture渲染
+        setParameters("{\"che.hardware_decoding\": 1}") //硬解码
+        setParameters("{\"che.video.mobile_1080p\":true}") //打开1080p限制
         setParameters("{\"che.hardware_encoding\":$codecIndex}")
 
 //        setParameters("{\"rtc.force_unified_communication_mode\":true}");//uc模式
@@ -71,5 +77,6 @@ fun changeConfigInChannel(rtcEngine: RtcEngine) {
                 VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_LANDSCAPE
             )
         )
+        setParameters("{\"che.video.mobile_1080p\":true}") //打开1080p限制
     }
 }

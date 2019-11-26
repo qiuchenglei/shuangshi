@@ -98,6 +98,7 @@ class TeacherInteractor {
                 try {
                     member = gson.fromJson(strJson, Member::class.java)
                 } catch (e: Exception) {
+                    LogUtil.fileLog("onAtrributeUpdated error: " + strJson)
                     continue
                 }
                 if (member.class_role == Role.STUDENT.intValue()) {

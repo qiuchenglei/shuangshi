@@ -1,6 +1,11 @@
 package io.agora.rtc.lib.util;
 
+import android.text.TextUtils;
 import android.util.Log;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class LogUtil {
     private static final String tagPre = "Shuang_shi_";
@@ -25,5 +30,31 @@ public class LogUtil {
 
     public void e(String msg) {
         Log.e(tag, msg);
+    }
+
+    private static String mFileName;
+    public static void initFileLog(String fileName) {
+        mFileName = fileName;
+    }
+
+    public static synchronized void fileLog(String s) {
+        if (TextUtils.isEmpty(mFileName) || TextUtils.isEmpty(s)){
+            return;
+        }
+        FileWriter fw = null;
+        try {
+            fw = new FileWriter(mFileName, true);
+            fw.append(s);
+            fw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (fw != null) {
+                try {
+                    fw.close();
+                } catch (IOException e) {
+                }
+            }
+        }
     }
 }

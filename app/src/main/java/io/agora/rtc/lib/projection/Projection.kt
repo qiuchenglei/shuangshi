@@ -1,17 +1,13 @@
 package io.agora.rtc.lib.projection
 
 import android.content.Context
-import android.content.Intent
-import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
-import android.net.Uri
-import android.view.Display
-import android.view.SurfaceView
-import android.view.WindowManager
-import android.widget.Toast
 import android.os.Build
 import android.provider.Settings
+import android.view.Display
+import android.view.SurfaceView
 import android.view.WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
+import android.widget.Toast
 
 
 class Projection {

@@ -6,16 +6,11 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
-import android.view.SurfaceView;
 
-
-import io.agora.rtc.Constants;
 import io.agora.rtc.IRtcEngineEventHandler;
 import io.agora.rtc.RtcEngine;
-import io.agora.rtc.shuangshi.R;
 import io.agora.rtc.lib.util.LogUtil;
-import io.agora.rtc.video.VideoCanvas;
-import io.agora.rtc.video.VideoEncoderConfiguration;
+import io.agora.rtc.shuangshi.R;
 
 public class RtcWorkerThread extends HandlerThread {
     private final static LogUtil log = new LogUtil("RtcWorkerThread");
@@ -99,58 +94,19 @@ public class RtcWorkerThread extends HandlerThread {
 
     @Override
     protected void onLooperPrepared() {
-        mHandler = new Handler(Looper.myLooper());
         ensureRtcEngineReadyLock();
+        mHandler = new Handler(Looper.myLooper());
     }
 
     public final void setRtcEventHandler(final IRtcEngineEventHandler rtcHandler) {
         mRtcHandler = rtcHandler;
     }
 
-    public final void joinChannel(final int role, final String channel, final int uid, final SurfaceView localView) {
-
-        runTask(new Runnable() {
-            @Override
-            public void run() {
-
-                mRtcEngine.setClientRole(role);
-
-                if (localView != null) {
-                    mRtcEngine.setupLocalVideo(new VideoCanvas(localView, Constants.RENDER_MODE_HIDDEN, 0));
-                }
-
-                mRtcEngine.setVideoEncoderConfiguration(new VideoEncoderConfiguration(
-                        VideoEncoderConfiguration.VD_240x240,
-                        VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_10,
-                        VideoEncoderConfiguration.STANDARD_BITRATE,
-                        VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_LANDSCAPE
-                ));
-
-//                mRtcEngine.setParameters("{\"rtc.force_unified_communication_mode\":true}");//uc模式
-
-                mRtcEngine.joinChannel(null, channel, "", uid);
-                log.d("joinChannel " + channel + " " + uid);
-            }
-        });
-    }
-
     public final void joinChannel(final int role, final String channel, final int uid) {
-
         runTask(new Runnable() {
             @Override
             public void run() {
-
                 mRtcEngine.setClientRole(role);
-
-                mRtcEngine.setVideoEncoderConfiguration(new VideoEncoderConfiguration(
-                        VideoEncoderConfiguration.VD_240x240,
-                        VideoEncoderConfiguration.FRAME_RATE.FRAME_RATE_FPS_10,
-                        VideoEncoderConfiguration.STANDARD_BITRATE,
-                        VideoEncoderConfiguration.ORIENTATION_MODE.ORIENTATION_MODE_FIXED_LANDSCAPE
-                ));
-
-//                mRtcEngine.setParameters("{\"rtc.force_unified_communication_mode\":true}");//uc模式
-
                 mRtcEngine.joinChannel(null, channel, "", uid);
                 log.d("joinChannel " + channel + " " + uid);
             }
@@ -199,13 +155,9 @@ public class RtcWorkerThread extends HandlerThread {
                 log.e(Log.getStackTraceString(e));
                 throw new RuntimeException("NEED TO check rtc sdk init fatal error\n" + Log.getStackTraceString(e));
             }
-            mRtcEngine.setParameters("{\"rtc.log_filter\": 65535}");
-
             log.i("Rtc engine created.");
-            mRtcEngine.setChannelProfile(Constants.CHANNEL_PROFILE_LIVE_BROADCASTING);
-            mRtcEngine.enableAudio();
-            mRtcEngine.enableVideo();
-            mRtcEngine.enableWebSdkInteroperability(true);
+
+            mRtcEngine.setParameters("{\"rtc.log_filter\": 65535}");
         }
     }
 

@@ -1,9 +1,13 @@
 package io.agora.rtc.shuangshi;
 
 import android.app.Application;
+import android.os.Environment;
+
+import java.io.File;
 
 import io.agora.rtc.lib.rtc.RtcWorkerThread;
 import io.agora.rtc.lib.rtm.RtmManager;
+import io.agora.rtc.lib.util.LogUtil;
 import io.agora.rtc.lib.util.SPUtil;
 
 
@@ -21,6 +25,18 @@ public class AGApplication extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
+        initSpUtil();
+        initLogUtil();
+    }
+
+    private void initLogUtil() {
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            File logDir = getExternalFilesDir("log");
+            if (logDir != null) {
+                String logFilePath = logDir.getAbsolutePath() + File.separator + "log.txt";
+                LogUtil.initFileLog(logFilePath);
+            }
+        }
     }
 
     public void initRtmManager() {

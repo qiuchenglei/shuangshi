@@ -11,6 +11,7 @@ import io.agora.rtc.lib.util.stringForTime
 import io.agora.rtc.shuangshi.classroom.Member
 import io.agora.rtc.shuangshi.setting.SettingFragmentDialog
 import io.agora.rtc.shuangshi.widget.dialog.MyDialogFragment
+import io.agora.rtc.video.ViEEGLSurfaceRenderer
 import io.agora.rtc.video.VideoCanvas
 import io.agora.rtm.ErrorInfo
 import io.agora.rtm.RtmChannelMember
@@ -206,6 +207,16 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
 
     private var projection: Projection = Projection()
 
+    fun createSurfaceView(uid:Int, context: Context): SurfaceView{
+        val surfaceView:SurfaceView
+        if (uid == mInteractor.getMyAttr().uid) {
+            surfaceView = RtcEngine.CreateRendererView(context)
+        } else {
+            surfaceView = ViEEGLSurfaceRenderer(context.applicationContext)
+        }
+        return surfaceView
+    }
+
     fun onStartProjection(
         bean: Member = mInteractor.getTeacherAttr()
     ): Boolean {
@@ -213,7 +224,7 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
             return bean.is_projection
 
         val context = mView as Context
-        val surfaceView = RtcEngine.CreateRendererView(context)
+        val surfaceView:SurfaceView = createSurfaceView(bean.uid, context)
 
         bean.is_projection = projection.startProjection(
             context,

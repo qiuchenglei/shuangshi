@@ -72,7 +72,7 @@ abstract class MembersAdapter(val mPresenter: TeacherPresenter) :
         notifyVideoView(
             viewHolder,
             bean,
-            RtcEngine.CreateRendererView(viewHolder.itemView.context)
+            mPresenter.createSurfaceView(bean.uid, viewHolder.itemView.context)
         )
 
         viewHolder.mIconMic.setOnClickListener {
@@ -84,7 +84,7 @@ abstract class MembersAdapter(val mPresenter: TeacherPresenter) :
             notifyVideoView(
                 viewHolder,
                 bean,
-                RtcEngine.CreateRendererView(viewHolder.itemView.context)
+                mPresenter.createSurfaceView(bean.uid, viewHolder.itemView.context)
             )
         }
 
@@ -127,12 +127,12 @@ abstract class MembersAdapter(val mPresenter: TeacherPresenter) :
         viewHolder.mProjectionView.projectionListener =
             object : ProjectionView.OnProjectionListener {
                 override fun onStartProjection() {
-                    mPresenter.onStartProjection(bean)
-                    if (bean.is_projection) {
+                    if (mPresenter.onStartProjection(bean)) {
                         viewHolder.mLayoutVideo.visibility = View.GONE
                         viewHolder.mLayoutVideo.removeAllViews()
                         viewHolder.mLayoutBg.visibility = View.VISIBLE
                     }
+                    viewHolder.mProjectionView.showIsProjectionUI(bean.is_projection)
                 }
 
                 override fun onCancelProjection() {
@@ -140,7 +140,7 @@ abstract class MembersAdapter(val mPresenter: TeacherPresenter) :
                     notifyVideoView(
                         viewHolder,
                         bean,
-                        RtcEngine.CreateRendererView(viewHolder.itemView.context)
+                        mPresenter.createSurfaceView(bean.uid, viewHolder.itemView.context)
                     )
                 }
             }

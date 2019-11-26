@@ -78,9 +78,10 @@ abstract class MembersAdapter(private val mPresenter: StudentPresenter, private 
                 }
                 viewHolder.mIconCamera?.setOnClickListener {
                     mPresenter.onClickCamera(bean)
+
                     notifyVideoView(
                         viewHolder, bean,
-                        RtcEngine.CreateRendererView(viewHolder.itemView.context)
+                        mPresenter.createSurfaceView(bean.uid, viewHolder.itemView.context)
                     )
                     viewHolder.mIconCamera?.isSelected = bean.is_mute_video
                 }
@@ -98,7 +99,8 @@ abstract class MembersAdapter(private val mPresenter: StudentPresenter, private 
 //                viewHolder.mIconSpeaker?.isSelected = bean.mute_remote_audio
 //            }
         viewHolder.mName.text = bean.user_name
-        notifyVideoView(viewHolder, bean, RtcEngine.CreateRendererView(viewHolder.itemView.context))
+        notifyVideoView(viewHolder, bean,
+            mPresenter.createSurfaceView(bean.uid, viewHolder.itemView.context))
 
         viewHolder.mProjectionView.showIsProjectionUI(bean.is_projection)
         viewHolder.mProjectionView.projectionListener =
@@ -109,13 +111,15 @@ abstract class MembersAdapter(private val mPresenter: StudentPresenter, private 
                         viewHolder.mLayoutVideo.removeAllViews()
                         viewHolder.mLayoutBg.visibility = View.VISIBLE
                     }
+
+                    viewHolder.mProjectionView.showIsProjectionUI(bean.is_projection)
                 }
 
                 override fun onCancelProjection() {
                     mPresenter.onCancelProjection(bean)
                     notifyVideoView(
                         viewHolder, bean,
-                        RtcEngine.CreateRendererView(viewHolder.itemView.context)
+                        mPresenter.createSurfaceView(bean.uid, viewHolder.itemView.context)
                     )
                 }
             }

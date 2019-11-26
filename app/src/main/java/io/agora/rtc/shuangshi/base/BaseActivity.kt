@@ -15,7 +15,10 @@ abstract class BaseActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        if (savedInstanceState != null) {
+            AGApplication.the().initWorkerThread()
+            AGApplication.the().initRtmManager()
+        }
         val layout = findViewById<View>(Window.ID_ANDROID_CONTENT)
         val vto = layout.viewTreeObserver
         vto.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
