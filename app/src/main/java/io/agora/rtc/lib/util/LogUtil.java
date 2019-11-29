@@ -4,6 +4,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -35,6 +36,18 @@ public class LogUtil {
     private static String mFileName;
     public static void initFileLog(String fileName) {
         mFileName = fileName;
+
+        File file = new File(mFileName);
+        if (!file.exists()) {
+            if (file.getParent() == null) {
+                file.mkdirs();
+            }
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static synchronized void fileLog(String s) {

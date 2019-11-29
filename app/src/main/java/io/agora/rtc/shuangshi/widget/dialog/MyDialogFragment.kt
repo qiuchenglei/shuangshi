@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 
+import android.support.v4.app.FragmentManager
 import io.agora.rtc.shuangshi.R
 
 
@@ -55,6 +56,15 @@ class MyDialogFragment : DialogFragment() {
         fun clickYes()
 
         fun clickNo()
+    }
+
+    /**
+     * 这里吧原来的commit()方法换成了commitAllowingStateLoss()
+     * for resolve
+     * java.lang.IllegalStateException: Can not perform this action after onSaveInstanceState
+     */
+    override fun show(manager: FragmentManager, tag: String) {
+        manager.beginTransaction().add(this, tag).commitAllowingStateLoss()
     }
 
     companion object {
