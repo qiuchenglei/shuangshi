@@ -71,7 +71,7 @@ class StudentInteractor {
                 try {
                     val timeStampS = timestampJson!!.toLong()
                     statusListener.onUpdateTimeStamp(timeStampS)
-                } catch (e: Exception){
+                } catch (e: Exception) {
                 }
             }
 
@@ -165,6 +165,45 @@ class StudentInteractor {
 
     }
 
+    private val rtmClientListener = object : RtmManager.MyRtmClientListener() {
+        override fun onMessageReceived(rtmMessage: RtmMessage?, peerId: String?) {
+            if (rtmMessage == null)
+                return
+            val message: P2PMessage
+            try {
+                message = Gson().fromJson(rtmMessage.text, P2PMessage::class.java)
+            } catch (e: JsonSyntaxException) {
+                return
+            }
+
+            when (message.cmd) {
+                P2PMessage.CMD_TEXT -> statusListener.onMessageReceived(rtmMessage, peerId)
+                P2PMessage.CMD_MUTE_AUDIO -> {
+                    muteLocalAudio(true)
+                    statusListener.onPartChange(mutableListOf(myAttr))
+                }
+                P2PMessage.CMD_MUTE_VIDEO -> {
+                    muteLocalVideo(true)
+                    statusListener.onPartChange(mutableListOf(myAttr))
+                }
+                P2PMessage.CMD_UN_MUTE_AUDIO -> {
+                    muteLocalAudio(false)
+                    statusListener.onPartChange(mutableListOf(myAttr))
+                }
+                P2PMessage.CMD_UN_MUTE_VIDEO -> {
+                    muteLocalVideo(false)
+                    statusListener.onPartChange(mutableListOf(myAttr))
+                }
+                P2PMessage.CMD_CALL -> {
+                    statusListener.onTeacherCall()
+                }
+                P2PMessage.CMD_OFF_LINE -> {
+                    onLine(false)
+                }
+            }
+        }
+    }
+
     fun init(
         roomName: String,
         userName: String,
@@ -187,39 +226,7 @@ class StudentInteractor {
             }
         })
 
-        rtmManager.registerListener(object : RtmManager.MyRtmClientListener() {
-            override fun onMessageReceived(rtmMessage: RtmMessage?, peerId: String?) {
-                if (rtmMessage == null)
-                    return
-                val message: P2PMessage = Gson().fromJson(rtmMessage.text, P2PMessage::class.java)
-
-                when (message.cmd) {
-                    P2PMessage.CMD_TEXT -> statusListener.onMessageReceived(rtmMessage, peerId)
-                    P2PMessage.CMD_MUTE_AUDIO -> {
-                        muteLocalAudio(true)
-                        statusListener.onPartChange(mutableListOf(myAttr))
-                    }
-                    P2PMessage.CMD_MUTE_VIDEO -> {
-                        muteLocalVideo(true)
-                        statusListener.onPartChange(mutableListOf(myAttr))
-                    }
-                    P2PMessage.CMD_UN_MUTE_AUDIO -> {
-                        muteLocalAudio(false)
-                        statusListener.onPartChange(mutableListOf(myAttr))
-                    }
-                    P2PMessage.CMD_UN_MUTE_VIDEO -> {
-                        muteLocalVideo(false)
-                        statusListener.onPartChange(mutableListOf(myAttr))
-                    }
-                    P2PMessage.CMD_CALL -> {
-                        statusListener.onTeacherCall()
-                    }
-                    P2PMessage.CMD_OFF_LINE -> {
-                        onLine(false)
-                    }
-                }
-            }
-        })
+        rtmManager.registerListener(rtmClientListener)
 
         rtcConfig(rtcWorker.rtcEngine)
 
@@ -303,6 +310,7 @@ class StudentInteractor {
 
         deleteMyAttr()
 
+        rtmManager.unregisterListener(rtmClientListener)
         rtmManager.leaveChannel(rtmChannel)
         rtmManager.releaseChannel(rtmChannel)
         rtmChannel = null

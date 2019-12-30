@@ -34,6 +34,7 @@ public class LogUtil {
     }
 
     private static String mFileName;
+    private static LogUtil logUtilFile;
     public static void initFileLog(String fileName) {
         mFileName = fileName;
 
@@ -54,6 +55,10 @@ public class LogUtil {
         if (TextUtils.isEmpty(mFileName) || TextUtils.isEmpty(s)){
             return;
         }
+        if (logUtilFile == null) {
+            logUtilFile = new LogUtil("file");
+        }
+        logUtilFile.e("s");
         FileWriter fw = null;
         try {
             fw = new FileWriter(mFileName, true);

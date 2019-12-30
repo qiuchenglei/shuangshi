@@ -136,6 +136,30 @@ class TeacherInteractor {
 
     }
 
+    private val rtmClientListener = object : RtmManager.MyRtmClientListener() {
+        override fun onMessageReceived(rtmMessage: RtmMessage?, peerId: String?) {
+            if (rtmMessage == null)
+                return
+            val message: P2PMessage
+            try {
+                message = Gson().fromJson(rtmMessage.text, P2PMessage::class.java)
+            } catch (e: JsonSyntaxException) {
+                return
+            }
+            when (message.cmd) {
+                P2PMessage.CMD_TEXT -> statusListener.onMessageReceived(rtmMessage, peerId)
+                P2PMessage.CMD_ACCEPT_CALL -> {
+//                        val attr:Member? = studentMap[peerId!!.toInt()]
+//                        attr?.online_state = 5
+                }
+                P2PMessage.CMD_REFUSE_CALL -> {
+//                        val attr:Member? = studentMap[peerId!!.toInt()]
+//                        attr?.online_state = 6
+                }
+            }
+        }
+    }
+
     fun init(
         roomName: String,
         userName: String,
@@ -157,29 +181,7 @@ class TeacherInteractor {
             }
         })
 
-        rtmManager.registerListener(object : RtmManager.MyRtmClientListener() {
-            override fun onMessageReceived(rtmMessage: RtmMessage?, peerId: String?) {
-                if (rtmMessage == null)
-                    return
-                val message: P2PMessage
-                try {
-                    message = Gson().fromJson(rtmMessage.text, P2PMessage::class.java)
-                } catch (e: JsonSyntaxException) {
-                    return
-                }
-                when (message.cmd) {
-                    P2PMessage.CMD_TEXT -> statusListener.onMessageReceived(rtmMessage, peerId)
-                    P2PMessage.CMD_ACCEPT_CALL -> {
-//                        val attr:Member? = studentMap[peerId!!.toInt()]
-//                        attr?.online_state = 5
-                    }
-                    P2PMessage.CMD_REFUSE_CALL -> {
-//                        val attr:Member? = studentMap[peerId!!.toInt()]
-//                        attr?.online_state = 6
-                    }
-                }
-            }
-        })
+        rtmManager.registerListener(rtmClientListener)
 
         rtcConfig(rtcWorker.rtcEngine)
 
@@ -281,6 +283,7 @@ class TeacherInteractor {
 
         deleteMyAttr()
 
+        rtmManager.unregisterListener(rtmClientListener)
         rtmManager.leaveChannel(rtmChannel)
         rtmManager.releaseChannel(rtmChannel)
         rtmChannel = null
