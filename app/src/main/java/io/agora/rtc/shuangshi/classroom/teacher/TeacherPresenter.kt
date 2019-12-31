@@ -8,7 +8,10 @@ import io.agora.rtc.shuangshi.R
 import io.agora.rtc.lib.projection.Projection
 import io.agora.rtc.lib.util.LogUtil
 import io.agora.rtc.lib.util.stringForTime
+import io.agora.rtc.mediaio.AgoraSurfaceView
 import io.agora.rtc.shuangshi.classroom.Member
+import io.agora.rtc.shuangshi.classroom.createLocalVideoView
+import io.agora.rtc.shuangshi.classroom.createRemoteVideoView
 import io.agora.rtc.shuangshi.setting.SettingFragmentDialog
 import io.agora.rtc.shuangshi.widget.dialog.MyDialogFragment
 import io.agora.rtc.video.ViEEGLSurfaceRenderer
@@ -74,7 +77,8 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
                 override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
                     log.d("onJoinRTCChannelSuccess")
                 }
-            })
+            },
+            mView as Context)
 
         mView?.updateTimer("00:00:00")
 
@@ -209,10 +213,10 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
 
     fun createSurfaceView(uid:Int, context: Context): SurfaceView{
         val surfaceView:SurfaceView
-        if (uid == mInteractor.getMyAttr().uid) {
-            surfaceView = RtcEngine.CreateRendererView(context)
+        if (uid == 0 || uid == mInteractor.getMyAttr().uid) {
+            surfaceView = createLocalVideoView(context)
         } else {
-            surfaceView = ViEEGLSurfaceRenderer(context.applicationContext)
+            surfaceView = createRemoteVideoView(context)
         }
         return surfaceView
     }
@@ -232,13 +236,7 @@ class TeacherPresenter(var mView: TeacherView?, val mInteractor: TeacherInteract
         )
 
         if (bean.is_projection) {
-            if (bean.uid == mInteractor.getMyAttr().uid) {
-                mInteractor.getRtcEngine().setupLocalVideo(VideoCanvas(surfaceView))
-            } else {
-                mInteractor.getRtcEngine().setupRemoteVideo(
-                    VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, bean.uid)
-                )
-            }
+            bindEngineVideo(surfaceView, bean.uid)
         }
 
         return bean.is_projection

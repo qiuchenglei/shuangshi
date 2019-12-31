@@ -16,6 +16,7 @@ import io.agora.rtc.shuangshi.R
 import io.agora.rtc.shuangshi.classroom.GridItemDecoration
 import io.agora.rtc.shuangshi.classroom.LinearItemDecoration
 import io.agora.rtc.shuangshi.classroom.Member
+import io.agora.rtc.shuangshi.classroom.createLocalVideoView
 import io.agora.rtc.shuangshi.constant.IntentKey
 import io.agora.rtc.shuangshi.setting.SettingFragmentDialog
 import io.agora.rtc.shuangshi.widget.dialog.MyDialogFragment
@@ -225,7 +226,7 @@ class ClassRoomTeacherActivity : ShareScreenActivity(), TeacherView {
             mTeacherMaxLayoutStartShare.visibility = View.VISIBLE
             mPresenter.onClickTeacherShare(false)
         }
-        mTeacherMaxSurfaceView = RtcEngine.CreateRendererView(this)
+        mTeacherMaxSurfaceView = createLocalVideoView(this)
         mTeacherMaxLayoutVideo.addView(
             mTeacherMaxSurfaceView,
             ViewGroup.LayoutParams.MATCH_PARENT,

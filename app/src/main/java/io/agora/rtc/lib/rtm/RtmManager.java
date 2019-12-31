@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.agora.rtc.Constants;
 import io.agora.rtc.shuangshi.AGApplication;
 import io.agora.rtc.shuangshi.BuildConfig;
 import io.agora.rtc.lib.util.LogUtil;
@@ -79,9 +80,10 @@ public class RtmManager {
         try {
             mRtmClient = RtmClient.createInstance(context, appId, mClientListener);
 
-            if (BuildConfig.DEBUG) {
-                mRtmClient.setParameters("{\"rtm.log_filter\": 65535}");
-            }
+//            if (BuildConfig.DEBUG) {
+//                mRtmClient.setParameters("{\"rtm.log_filter\": 65535}");
+//            }
+            mRtmClient.setLogFilter(0);
         } catch (Exception e) {
             log.e(Log.getStackTraceString(e));
             throw new RuntimeException("NEED TO check rtm sdk init fatal error\n" + Log.getStackTraceString(e));

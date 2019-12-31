@@ -19,6 +19,7 @@ import io.agora.rtc.shuangshi.base.BaseActivity
 import io.agora.rtc.shuangshi.classroom.GridItemDecoration
 import io.agora.rtc.shuangshi.classroom.LinearItemDecoration
 import io.agora.rtc.shuangshi.classroom.Member
+import io.agora.rtc.shuangshi.classroom.createRemoteVideoView
 import io.agora.rtc.shuangshi.constant.IntentKey
 import io.agora.rtc.shuangshi.constant.Role
 import io.agora.rtc.shuangshi.setting.SettingFragmentDialog
@@ -191,7 +192,7 @@ class ClassRoomStudentActivity : BaseActivity(), StudentView {
         mTeacherMaxIcMin.setOnClickListener { mPresenter.onClickTeacherMinOrMax(false) }
 //        mTeacherMaxIcSpeaker.setOnClickListener { mPresenter.onClickTeacherSpeaker() }
 
-        mTeacherMaxSurfaceView = ViEEGLSurfaceRenderer(applicationContext)
+        mTeacherMaxSurfaceView = createRemoteVideoView(applicationContext)
         mTeacherMaxLayoutVideo.addView(
             mTeacherMaxSurfaceView,
             ViewGroup.LayoutParams.MATCH_PARENT,

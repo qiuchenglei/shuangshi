@@ -1,5 +1,6 @@
 package io.agora.rtc.shuangshi.classroom.student
 
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
@@ -13,6 +14,9 @@ import io.agora.rtc.RtcEngine
 import io.agora.rtc.lib.rtc.RtcConfig
 import io.agora.rtc.lib.rtm.RtmManager
 import io.agora.rtc.lib.util.LogUtil
+import io.agora.rtc.mediaio.AgoraSurfaceView
+import io.agora.rtc.mediaio.AgoraTextureCamera
+import io.agora.rtc.mediaio.MediaIO
 import io.agora.rtc.shuangshi.AGApplication
 import io.agora.rtc.shuangshi.classroom.*
 import io.agora.rtc.shuangshi.constant.Role
@@ -204,11 +208,14 @@ class StudentInteractor {
         }
     }
 
+    private var videoSource:MyTextureCamera? = null
+
     fun init(
         roomName: String,
         userName: String,
         userId: Int,
-        statusListener: ClassStatusListener
+        statusListener: ClassStatusListener,
+        context:Context
     ) {
         this.statusListener = statusListener
         mHandler = Handler(Looper.getMainLooper())
@@ -228,8 +235,8 @@ class StudentInteractor {
 
         rtmManager.registerListener(rtmClientListener)
 
-        rtcConfig(rtcWorker.rtcEngine)
-
+        videoSource = MyTextureCamera(context)
+        rtcConfig(rtcWorker.rtcEngine, videoSource)
 
         rtmChannel = rtmManager.createChannel(myAttr.room_name, rtmChannelListener)
     }
@@ -303,7 +310,6 @@ class StudentInteractor {
 
     fun leaveChannel() {
         rtcWorker.runTask {
-            rtcWorker.rtcEngine.stopPreview()
             rtcWorker.rtcEngine.leaveChannel()
             rtcWorker.setmRtcConfig(null)
         }
@@ -364,8 +370,21 @@ class StudentInteractor {
 
     fun bindEngineVideo(surfaceView: SurfaceView?, userId: Int) {
         if (myAttr.uid == userId) {
-            rtcWorker.rtcEngine.setupLocalVideo(VideoCanvas(surfaceView))
-            rtcWorker.rtcEngine.startPreview()
+//            rtcWorker.rtcEngine.setupLocalVideo(VideoCanvas(surfaceView))
+            var agoraSurfaceView: AgoraSurfaceView? = null
+            if (surfaceView is AgoraSurfaceView) {
+                agoraSurfaceView = surfaceView
+            }
+            agoraSurfaceView?.apply {
+                if (videoSource != null) {
+                    init(videoSource!!.eglContext)
+                } else {
+                    init(null)
+                }
+                setBufferType(MediaIO.BufferType.TEXTURE)
+                setPixelFormat(MediaIO.PixelFormat.TEXTURE_OES)
+            }
+            rtcWorker.rtcEngine.setLocalVideoRenderer(agoraSurfaceView)
         } else {
             rtcWorker.rtcEngine.setupRemoteVideo(
                 VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, userId)

@@ -7,6 +7,7 @@ import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 
+import io.agora.rtc.Constants;
 import io.agora.rtc.IRtcEngineEventHandler;
 import io.agora.rtc.RtcEngine;
 import io.agora.rtc.lib.util.LogUtil;
@@ -157,7 +158,7 @@ public class RtcWorkerThread extends HandlerThread {
             }
             log.i("Rtc engine created.");
 
-            mRtcEngine.setParameters("{\"rtc.log_filter\": 65535}");
+            mRtcEngine.setLogFilter(Constants.LOG_FILTER_OFF);
         }
     }
 

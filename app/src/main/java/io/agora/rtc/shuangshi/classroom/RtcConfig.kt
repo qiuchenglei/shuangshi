@@ -3,12 +3,13 @@ package io.agora.rtc.shuangshi.classroom
 import io.agora.rtc.Constants
 import io.agora.rtc.RtcEngine
 import io.agora.rtc.lib.util.SPUtil
+import io.agora.rtc.mediaio.IVideoSource
 import io.agora.rtc.shuangshi.constant.AudioProfile
 import io.agora.rtc.shuangshi.constant.SPKey
 import io.agora.rtc.shuangshi.constant.VideoProfile
 import io.agora.rtc.video.VideoEncoderConfiguration
 
-fun rtcConfig(rtcEngine: RtcEngine) {
+fun rtcConfig(rtcEngine: RtcEngine, videoSource: IVideoSource? = null) {
     val isHighQuality = SPUtil.get(SPKey.AUDIO_HIGH_QUALITY, AudioProfile.IS_HIGH_QUALITY_DEFAULT)
     val isStereo = SPUtil.get(SPKey.AUDIO_STEREO, AudioProfile.IS_STEREO_DEFAULT)
     val speakerVolume = SPUtil.get(SPKey.AUDIO_SPEAKER_PHONE_VOLUME, AudioProfile.SPEAKER_VOLUME_DEFAULT)
@@ -38,6 +39,10 @@ fun rtcConfig(rtcEngine: RtcEngine) {
 
         adjustPlaybackSignalVolume(speakerVolume)
 
+        if (videoSource != null) {
+            setVideoSource(videoSource)
+        }
+
         setVideoEncoderConfiguration(
             VideoEncoderConfiguration(
                 VideoProfile.VD[vdIndex],
@@ -63,8 +68,6 @@ fun changeConfigInChannel(rtcEngine: RtcEngine) {
     val fpsIndex = SPUtil.get(SPKey.VIDEO_FPS, VideoProfile.FPS_DEFAULT_INDEX)
     val bitrateIndex = SPUtil.get(SPKey.VIDEO_BITRATE, VideoProfile.BITRATE_DEFAULT_INDEX)
     rtcEngine.apply {
-        enableAudio()
-        enableVideo()
         setClientRole(Constants.CLIENT_ROLE_BROADCASTER)
 
         adjustPlaybackSignalVolume(speakerVolume)
